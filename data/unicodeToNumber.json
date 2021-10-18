@@ -1,0 +1,14 @@
+{
+  "codes" : [
+    {"unicode" : 48, "value" : 0},
+    {"unicode" : 49, "value" : 1},
+    {"unicode" : 50, "value" : 2},
+    {"unicode" : 51, "value" : 3},
+    {"unicode" : 52, "value" : 4},
+    {"unicode" : 53, "value" : 5},
+    {"unicode" : 54, "value" : 6},
+    {"unicode" : 55, "value" : 7},
+    {"unicode" : 56, "value" : 8},
+    {"unicode" : 57, "value" : 9}
+  ]
+}

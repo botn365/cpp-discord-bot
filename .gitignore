@@ -1,0 +1,7 @@
+/cmake*
+/libs/rapidjson/*
+libs/sqlite/*
+.idea
+data/settings.json
+*.dll
+/libs/DPP/.gitignore

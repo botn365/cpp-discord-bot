@@ -1,0 +1,6 @@
+{
+  "bot_token" : "",
+  "server_id" : 0,
+  "count_game_db_location" : "CountData.db",
+  "unicode_translation" : "unicodeToNumber.json"
+}
