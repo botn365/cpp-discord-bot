@@ -9,8 +9,21 @@ set(BUILD_FOLDER_CLION cmake-build-${LOWER_MODE})
 set(DPP_LIBS_FOLDER libs/DPP/${BUILD_FOLDER_CLION})
 link_directories(${DPP_LIBS_FOLDER})
 
+if (UNIX)
+    set(DPP_LIB libdpp.so)
+else()
+    set(DPP_LIB dpp.lib)
+endif()
+
+
 set(SQLITE_LINK_DIR libs/sqlite/lib)
-link_directories (${SQLITE_LINK_DIR})
+if (UNIX)
+    include(${CMAKE_SOURCE_DIR}/cmake/addSqlite3.cmake)
+    set(SQLITE_LIB sqlite3)
+else()
+    set(SQLITE_LIB sqlite3.dll)
+    ink_directories (${SQLITE_LINK_DIR})
+endif()
 
 file(GLOB SRC CONFIGURE_DEPENDS "include/*.h" "src/*.cpp")
 
@@ -19,19 +32,21 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         libs/DPP/include
-        libs/rapidjson/include
+#        libs/rapidjson/include
         libs/sqlite/include)
 
 target_link_libraries(${PROJECT_NAME}
-        dpp.lib
-        sqlite3.dll)
+        PRIVATE
+        ${DPP_LIB}
+        ${SQLITE_LIB})
 
-
-configure_file("${DPP_LIBS_FOLDER}/dpp.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-configure_file("${DPP_LIBS_FOLDER}/zlib1.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-configure_file("${DPP_LIBS_FOLDER}/libcrypto-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-configure_file("${DPP_LIBS_FOLDER}/libssl-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-configure_file("${DPP_LIBS_FOLDER}/libsodium.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-configure_file("${DPP_LIBS_FOLDER}/opus.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-configure_file("${SQLITE_LINK_DIR}/sqlite3.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+if (NOT UNIX)
+    configure_file("${DPP_LIBS_FOLDER}/dpp.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    configure_file("${DPP_LIBS_FOLDER}/zlib1.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    configure_file("${DPP_LIBS_FOLDER}/libcrypto-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    configure_file("${DPP_LIBS_FOLDER}/libssl-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    configure_file("${DPP_LIBS_FOLDER}/libsodium.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    configure_file("${DPP_LIBS_FOLDER}/opus.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    configure_file("${SQLITE_LINK_DIR}/sqlite3.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+endif()
 
