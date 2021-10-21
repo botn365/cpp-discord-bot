@@ -3,19 +3,27 @@ project(discord_bot)
 
 set(CMAKE_CXX_STANDARD 17)
 
-string(TOLOWER ${CMAKE_BUILD_TYPE} LOWER_MODE)
+#using this slows down clion fpr me so when developing i like it turned off
+option(USE_SUBDIRECTORY "include dpp trough subdirectory" ON)
 
-set(BUILD_FOLDER_CLION cmake-build-${LOWER_MODE})
-set(DPP_LIBS_FOLDER libs/DPP/${BUILD_FOLDER_CLION})
-link_directories(${DPP_LIBS_FOLDER})
-
-if (UNIX)
-    set(DPP_LIB libdpp.so)
+#handel dpp
+if (USE_SUBDIRECTORY)
+    add_subdirectory(libs/DPP REQUIRED)
+    set(DPP_LIB dpp)
 else()
-    set(DPP_LIB dpp.lib)
+    string(TOLOWER ${CMAKE_BUILD_TYPE} LOWER_MODE)
+    set(BUILD_FOLDER_CLION cmake-build-${LOWER_MODE})
+    set(DPP_LIBS_FOLDER libs/DPP/${BUILD_FOLDER_CLION})
+    link_directories(${DPP_LIBS_FOLDER})
+    if (UNIX)
+        set(DPP_LIB libdpp.so)
+    else()
+        set(DPP_LIB dpp.lib)
+    endif()
 endif()
 
 
+#handel sqlite
 set(SQLITE_LINK_DIR libs/sqlite/lib)
 if (UNIX)
     include(${CMAKE_SOURCE_DIR}/cmake/addSqlite3.cmake)
@@ -32,7 +40,7 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         libs/DPP/include
-#        libs/rapidjson/include
+        libs/rapidjson/include
         libs/sqlite/include)
 
 target_link_libraries(${PROJECT_NAME}
@@ -41,12 +49,14 @@ target_link_libraries(${PROJECT_NAME}
         ${SQLITE_LIB})
 
 if (NOT UNIX)
-    configure_file("${DPP_LIBS_FOLDER}/dpp.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-    configure_file("${DPP_LIBS_FOLDER}/zlib1.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-    configure_file("${DPP_LIBS_FOLDER}/libcrypto-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-    configure_file("${DPP_LIBS_FOLDER}/libssl-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-    configure_file("${DPP_LIBS_FOLDER}/libsodium.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-    configure_file("${DPP_LIBS_FOLDER}/opus.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
-    configure_file("${SQLITE_LINK_DIR}/sqlite3.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    if (NOT ${USE_SUBDIRECTORY})
+        configure_file("${DPP_LIBS_FOLDER}/dpp.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+        configure_file("${DPP_LIBS_FOLDER}/zlib1.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+        configure_file("${DPP_LIBS_FOLDER}/libcrypto-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+        configure_file("${DPP_LIBS_FOLDER}/libssl-1_1-x64.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+        configure_file("${DPP_LIBS_FOLDER}/libsodium.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+        configure_file("${DPP_LIBS_FOLDER}/opus.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+        configure_file("${SQLITE_LINK_DIR}/sqlite3.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
+    endif()
 endif()
 

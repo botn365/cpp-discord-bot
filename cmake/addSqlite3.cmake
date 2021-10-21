@@ -1,5 +1,3 @@
-
-message(${CMAKE_SOURCE_DIR})
 set(SQLITE_INCLUDE ${CMAKE_SOURCE_DIR}/libs/sqlite/include)
 
 add_library(sqlite3 STATIC
