@@ -9,6 +9,7 @@
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
+#include <cmath>
 
 
 namespace Bot {

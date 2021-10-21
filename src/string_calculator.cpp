@@ -2,6 +2,7 @@
 // Created by vanda on 12/10/2021.
 //
 
+#include <cmath>
 #include "../include/string_calculator.hpp"
 
 static std::unordered_map<char32_t, Bot::Operator> unicodeToOperator;
