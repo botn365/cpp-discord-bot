@@ -11,26 +11,58 @@ option(DOWNLOAD_LIBS "if it should download libs" ON)
 if(DOWNLOAD_LIBS)
     include(FetchContent)
 
+
+    #dpp
     FetchContent_Declare(
-            DPP_DW
+            dpp_dw
             GIT_REPOSITORY git@github.com:brainboxdotcc/DPP.git
             GIT_TAG  origin/master
     )
-    FetchContent_GetProperties(DPP_DW)
-    if (NOT DPP_DW_POPULATED)
-        FetchContent_Populate(DPP_DW)
+    FetchContent_GetProperties(dpp_dw)
+    if (NOT dpp_dw_POPULATED)
+        FetchContent_Populate(dpp_dw)
     endif ()
 
     add_subdirectory(${dpp_dw_SOURCE_DIR} ${dpp_dw_BINARY_DIR})
     set(DPP_LIB dpp)
     set(INCLUDE_DPP ${dpp_dw_SOURCE_DIR}/include)
+
+
+    #rapidjson
+    FetchContent_Declare(
+            rapidjson_dw
+            GIT_REPOSITORY git@github.com:Tencent/rapidjson.git
+            GIT_TAG  origin/master
+    )
+    FetchContent_GetProperties(rapidjson_dw)
+    if (NOT rapidjson_dw_POPULATED)
+        FetchContent_Populate(rapidjson_dw)
+    endif ()
+    set(INCLUDE_RAPID_JSON ${rapidjson_dw_SOURCE_DIR}/include)
+
+
+    #sqlite
+    set(CMAKE_TLS_VERIFY true)
+    FetchContent_Declare(
+            sqlite_dw
+            URL https://www.sqlite.org/2021/sqlite-amalgamation-3360000.zip
+            URL_HASH SHA3_256=d25609210ec93b3c8c7da66a03cf82e2c9868cfbd2d7d866982861855e96f972
+    )
+    FetchContent_GetProperties(sqlite_dw)
+    if (NOT sqlite_dw_POPULATED)
+        FetchContent_Populate(sqlite_dw)
+    endif ()
+    set(SQLITE_INCLUDE ${sqlite_dw_SOURCE_DIR})
+    include(${CMAKE_SOURCE_DIR}/cmake/addSqlite3.cmake)
+    set(SQLITE_LIB sqlite3)
 endif()
 
 
 
-
-#handel dpp
 if(NOT DOWNLOAD_LIBS)
+    set(INCLUDE_RAPID_JSON libs/rapidjson/include)
+
+    #handel dpp
     set(INCLUDE_DPP libs/DPP/include)
     if (USE_SUBDIRECTORY)
         add_subdirectory(libs/DPP REQUIRED)
@@ -46,18 +78,18 @@ if(NOT DOWNLOAD_LIBS)
             set(DPP_LIB dpp.lib)
         endif()
     endif()
-endif()
 
     #handel sqlite
-    set(SQLITE_LINK_DIR libs/sqlite/lib)
+    set(SQLITE_INCLUDE ${CMAKE_SOURCE_DIR}/libs/sqlite/include)
     if (UNIX)
         include(${CMAKE_SOURCE_DIR}/cmake/addSqlite3.cmake)
         set(SQLITE_LIB sqlite3)
     else()
+        set(SQLITE_LINK_DIR libs/sqlite/lib)
         set(SQLITE_LIB sqlite3.dll)
         link_directories (${SQLITE_LINK_DIR})
     endif()
-#endif()
+endif()
 
 
 
@@ -68,8 +100,8 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${INCLUDE_DPP}
-        libs/rapidjson/include
-        libs/sqlite/include)
+        ${INCLUDE_RAPID_JSON}
+        ${SQLITE_INCLUDE})
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
