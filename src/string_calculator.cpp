@@ -57,7 +57,7 @@ double Bot::StringCalculator::calculateFromRPNList(std::list<std::unique_ptr<Cou
             stack.push(num->value);
         }
     }
-    if (stack.size() == 0) return NAN;
+    if (stack.size() != 1 ) return NAN;
     return stack.top();
 }
 

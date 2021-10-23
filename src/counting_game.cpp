@@ -274,7 +274,9 @@ namespace Bot {
             char32_t unicode;
             index = StringCalculator::getUnicode(index,unicode);
             int number = StringCalculator::getNumberFromUnicode(unicode);
-            return number != -1;
+            if (number != -1) return true;
+            auto op = StringCalculator::getOperator(unicode);
+            return op != nullptr;
         }
         return false;
     }

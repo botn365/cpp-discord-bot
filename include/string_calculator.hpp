@@ -54,14 +54,14 @@ namespace Bot {
 
         static const char *getUnicode(const char *input,char32_t &unicode);
 
+        static Operator *getOperator(char32_t unicode);
+
     private:
         static int getParanthese(char32_t &unicode);
 
         static void insertOperatorInRPNList(std::list<std::unique_ptr<CountObj>> &list,
                                             std::list<std::unique_ptr<CountObj>>::iterator &index,
                                             Operator *operand, int paranthesePriorety);
-
-        static Operator *getOperator(char32_t unicode);
 
         static char32_t converToUnicode(const char *input,int len);
     };
