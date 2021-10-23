@@ -45,11 +45,7 @@ int main() {
         }
     });
 
-    bot.on_ready([&bot, &server](const dpp::ready_t &event) {
-        dpp::command_permission admin;
-        admin.type = dpp::cpt_role;
-        admin.id = 894983688213893140;
-        admin.permission = true;
+    bot.on_ready([&bot, &server, &settings](const dpp::ready_t &event) {
 
         dpp::slashcommand setChannel;
         setChannel.set_name("set_counting_channel");
@@ -57,7 +53,28 @@ int main() {
         setChannel.set_type(dpp::ctxm_chat_input);
         std::cout<<bot.me.id<<"\n";
         setChannel.set_application_id(bot.me.id);
-        //setChannel.add_permission(admin);
+
+        //TODO replace this completly to get it from json and modify trough app commands
+        std::string ref = "MEGA_bot";
+        auto *admin = settings.getCommandPermission(ref);
+        if (admin != nullptr) {
+            std::cout<<"set admin"<<"\n";
+            setChannel.add_permission(*admin);
+        }
+        ref = "community_manger";
+        admin = settings.getCommandPermission(ref);
+        if (admin != nullptr) {
+            std::cout<<"set admin"<<"\n";
+            setChannel.add_permission(*admin);
+        }
+        ref = "bass";
+        admin = settings.getCommandPermission(ref);
+        if (admin != nullptr) {
+            std::cout<<"set admin"<<"\n";
+            setChannel.add_permission(*admin);
+        }
+
+        setChannel.disable_default_permissions();
         setChannel.add_option(
                 dpp::command_option(
                         dpp::co_channel, "channel", "set the channel where counting happens", true
