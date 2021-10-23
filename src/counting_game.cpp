@@ -266,6 +266,7 @@ namespace Bot {
         const char * index = input.data();
         const char * end = input.data()+input.size();
         while (index < end) {
+            if (*index == '<') return false;
             if (*index == ' ') {
                 index++;
                 continue;
