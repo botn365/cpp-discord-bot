@@ -219,6 +219,7 @@ namespace Bot {
 
     //reply with message depending on type
     void CountingGame::reply(const Type type, dpp::cluster &bot, const dpp::message_create_t &message, double value) {
+        int64_t cast = value;
         switch (type) {
             case Bot::CountingGame::Type::CORRECT:
                 bot.message_add_reaction(message.msg->id, message.msg->channel_id, "✅");
@@ -228,7 +229,7 @@ namespace Bot {
                 bot.message_create(dpp::message(
                         message.msg->channel_id,
                         "<@" + std::to_string(message.msg->author->id) +
-                        "> Cant count.Gave Value "+std::to_string(value)+". Count reset to 1"
+                        "> Cant count.Gave Value "+std::to_string(cast)+". Count reset to 1"
                 ));
                 currentCount = resetCount;
                 break;
