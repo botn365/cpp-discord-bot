@@ -16,27 +16,41 @@ std::list<std::unique_ptr<Bot::CountObj>> Bot::StringCalculator::convertStringTo
     auto index = list.begin();
     int bracketPriorety = 0;
     bool indexUp = false;
+    bool numberWasLast = false;
+    auto *multOp = getOperator('*');
     for (const char *i = input.data(); i < end;) {
         double number;
         if (getNumber(&i, number, end)) {
+            if (numberWasLast) {
+                insertOperatorInRPNList(list,index,multOp, bracketPriorety);
+            }
             index = list.insert(++index, std::make_unique<Number>(number));
             indexUp = true;
+            numberWasLast = true;
         } else {
             char32_t unicode;
             i = getUnicode(i, unicode);
             if (unicode == 0) continue;
+            if (!numberWasLast && unicode == '-') unicode = '~';
             auto operatorLambda = getOperator(unicode);
             if (operatorLambda != nullptr) {
                 insertOperatorInRPNList(list, index, operatorLambda, bracketPriorety);
                 indexUp = true;
+                numberWasLast = false;
+                if (unicode == '!') index++;
             } else {
                 int bracket = getParanthese(unicode);
                 if (bracket > 0 && indexUp) {
                     indexUp = false;
+                    numberWasLast = false;
                     index--;
                 }
-                if (bracket < 0) indexUp = false;
+                if (bracket < 0){
+                    indexUp = false;
+                    numberWasLast = false;
+                }
                 bracketPriorety += bracket;
+                if (unicode != ' ') break;
             }
         }
     }
