@@ -14,12 +14,6 @@ int main() {
     Bot::LoadOperators::loadNumbers(settings.getUnicodeTranslationLocation());
     Bot::LoadOperators::loadOperators();
 
-    std::string_view in = "4!";
-    auto list = Bot::StringCalculator::convertStringToRPNList(in);
-    double value = Bot::StringCalculator::calculateFromRPNList(list);
-    std::cout<<value<<"\n";
-    return 0;
-
     uint32_t intents = 0;
     intents += dpp::i_guild_integrations;
     intents += dpp::i_guild_messages;
