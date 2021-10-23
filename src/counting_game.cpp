@@ -229,7 +229,7 @@ namespace Bot {
                 bot.message_create(dpp::message(
                         message.msg->channel_id,
                         "<@" + std::to_string(message.msg->author->id) +
-                        "> Cant count.Gave Value "+std::to_string(cast)+". Count reset to 1"
+                        "> Cant count. Gave Value "+std::to_string(cast)+". Count reset to 1"
                 ));
                 currentCount = resetCount;
                 break;

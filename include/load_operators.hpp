@@ -156,7 +156,7 @@ namespace Bot {
                 stack.pop();
                 if (d1 < 0) return false;
                 double fac = 1.0;
-                for (int64_t i = 2;i<d1;i++) {
+                for (int64_t i = 2;i<=d1;i++) {
                     fac *= i;
                 }
                 stack.push(fac);
