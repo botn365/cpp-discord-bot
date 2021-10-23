@@ -7,6 +7,9 @@
 
 ### linux
 
+run cmake on project
+
+make
 
 ### windows
 
