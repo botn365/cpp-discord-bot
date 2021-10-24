@@ -88,7 +88,7 @@ endif()
 
 
 
-file(GLOB SRC CONFIGURE_DEPENDS "include/*.h" "src/*.cpp")
+file(GLOB SRC CONFIGURE_DEPENDS "include/*.hpp" "src/*.cpp")
 
 add_executable(${PROJECT_NAME}
         ${SRC})
