@@ -305,7 +305,7 @@ namespace Bot {
         std::sort(playerList.begin(), playerList.end(),
                   [](const std::pair<const dpp::snowflake, Player> *p1,
                      const std::pair<const dpp::snowflake, Player> *p2) {
-                      return p1->second.getTotalCount() >= p2->second.getTotalCount();
+                      return p1->second.getHighestCount() >= p2->second.getHighestCount();
                   });
 
         if (startPos + amount > playerList.size()) {
