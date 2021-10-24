@@ -41,20 +41,25 @@ namespace Bot {
                     if (unicode == '!') index++;
                 } else {
                     int bracket = getParanthese(unicode);
-                    if (bracket > 0 && indexUp) {
-                        numberWasLast = false;
+                    if (bracket > 0) {
+                        if (numberWasLast) {
+                            insertOperatorInRPNList(list, index, multOp, bracketPriorety);
+                            numberWasLast = false;
+                        }
                         if (indexUp) {
                             index--;
                         } else {
                             indexUp = false;
                         }
+                        continue;
                     }
                     if (bracket < 0) {
                         indexUp = false;
-                        numberWasLast = false;
+                        continue;
+                        //numberWasLast = false;
                     }
                     bracketPriorety += bracket;
-                    if (bracket == 0 && unicode != ' ') break;
+                    if (unicode != ' ') break;
                 }
             }
         }

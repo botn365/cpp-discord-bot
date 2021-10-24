@@ -203,6 +203,7 @@ namespace Bot {
             std::string_view view(message.msg->content);
             auto RPNList = StringCalculator::convertStringToRPNList(view);
             double value = StringCalculator::calculateFromRPNList(RPNList);
+            if (std::isnan(value)) return;
             value = std::floor(value);
             bool isCorrect = value == ++currentCount;
             auto keySet = players.find(author);
