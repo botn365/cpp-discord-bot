@@ -418,7 +418,7 @@ namespace Bot {
             dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
             uint64_t startPos = 0;
             if (!cmd_data.options.empty()) {
-                startPos = std::get<uint64_t>(cmd_data.options[0].value);
+                startPos = std::get<long>(cmd_data.options[0].value);
             }
             auto players = getRankedPlayers(10, startPos);
             std::stringstream ss;
