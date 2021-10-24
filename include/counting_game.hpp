@@ -4,6 +4,7 @@
 #pragma once
 
 #include "player.hpp"
+#include "settings.hpp"
 #include <dpp/dpp.h>
 #include <sqlite3.h>
 
@@ -47,6 +48,10 @@ namespace Bot {
         Player &addPlayer(dpp::snowflake id);
 
         void saveGame();
+
+        void onInteraction(const dpp::interaction_create_t &interaction);
+
+        void addCommands(dpp::cluster &bot, Settings &settings);
 
     private:
         Type addCountToPlayer(Player &player,bool correct);

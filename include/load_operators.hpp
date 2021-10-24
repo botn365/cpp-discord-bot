@@ -162,6 +162,16 @@ namespace Bot {
                 stack.push(fac);
                 return true;
             });
+
+            Str::addOperator('%', 3, [](std::stack<double> &stack) {
+                if (stack.size() < 2) return false;
+                int64_t d1 = stack.top();
+                stack.pop();
+                int64_t d2 = stack.top();
+                stack.pop();
+                stack.push(d2%d1);
+                return true;
+            });
         }
 
         static std::string fileToString(std::string file) {

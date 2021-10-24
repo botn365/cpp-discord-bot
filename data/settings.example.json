@@ -3,12 +3,16 @@
   "server_id" : 0,
   "count_game_db_location" : "CountData.db",
   "unicode_translation" : "unicodeToNumber.json",
-  "command_peremissions" : [
+  "slash_commands" : [
     {
-      "is_user" : false,
-      "roll_name" : "name",
-      "roll_id" : 0,
-      "allow" : true
+      "name" : "name",
+      "permissions" : [
+        {
+          "is_user" : false,
+          "id" : 0,
+          "allow" : true
+        }
+      ]
     }
   ]
 }

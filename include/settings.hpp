@@ -12,25 +12,21 @@
 namespace Bot {
     class Settings {
     public:
+
         Settings(std::string file);
 
-        const std::string &getToken();
+        const char *getToken();
 
-        const std::string &getCountDBLocation();
+        const char *getCountDBLocation();
 
-        const std::string &getUnicodeTranslationLocation();
+        const char *getUnicodeTranslationLocation();
 
         const uint64_t getServerId();
 
-        const dpp::command_permission *getCommandPermission(std::string &rollName);
+        std::vector<dpp::command_permission> getCommandPermissions(std::string &commandName);
 
     private:
-        void loadPermissions(rapidjson::Document &doc);
-        std::string token;
-        std::string countingGameDBLocation;
-        std::string unicodeTranslationLocation;
-        uint64_t serverId;
-        std::unordered_map<std::string,dpp::command_permission> commandPermisions;
+        rapidjson::Document doc;
     };
 }
 
