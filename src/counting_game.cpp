@@ -372,7 +372,7 @@ namespace Bot {
         }
         testNumber.add_option(
                 dpp::command_option(
-                        dpp::co_string, "calculation", "", true
+                        dpp::co_string, "calculation", "calculation", true
                 ));
         registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
             dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
