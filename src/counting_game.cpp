@@ -362,13 +362,20 @@ namespace Bot {
 
     void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
                                        std::function<void(const dpp::interaction_create_t &interaction)> interactionCallBack) {
-        bot.guild_command_create(command,settings.getServerId(),[&bot,&command,this, &interactionCallBack](const dpp::confirmation_callback_t &callback){
+        bot.guild_command_create(command,settings.getServerId(),[&bot,command,this, interactionCallBack](const dpp::confirmation_callback_t &callback){
             if (callback.is_error()) {
                 std::cout << callback.get_error().message << "\n";
             }
-            this->commands.insert(std::pair<uint64_t,dpp::slashcommand>(command.id,command));
+            dpp::slashcommand cmd_data = std::get<dpp::slashcommand>(callback.value);
+            uint64_t id = cmd_data.id;
+            auto returnValue = this->commands.insert(std::pair<uint64_t,dpp::slashcommand>(id,command));
+            if (returnValue.second) {
+                returnValue.first->second.id = id;
+            } else {
+                std::cout<<"ERROR failed to register command"<<"\n";
+            }
             this->interactions.insert(std::pair<uint64_t,std::function<void(const dpp::interaction_create_t &interaction)>>(
-                    command.id,
+                    id,
                     interactionCallBack
                     ));
         });
