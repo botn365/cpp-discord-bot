@@ -29,12 +29,13 @@ namespace Bot {
 
     class Operator : public CountObj {
     public:
-        Operator(int priorety, std::function<bool(std::stack<double>&)> run) :
-                priorety{priorety}, run{std::move(run)} {}
+        Operator(int priorety,char32_t unicode, std::function<bool(std::stack<double>&)> run) :
+                priorety{priorety},unicode{unicode} ,run{std::move(run)} {}
 
         bool isOperator() override { return true; }
 
         std::function<bool(std::stack<double>&)> run;
+        char32_t unicode;
         int priorety;
     };
 

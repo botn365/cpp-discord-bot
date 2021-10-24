@@ -77,7 +77,7 @@ double Bot::StringCalculator::calculateFromRPNList(std::list<std::unique_ptr<Cou
 
 //add unicode operator pair to hashmap
 void Bot::StringCalculator::addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run) {
-    unicodeToOperator.insert(std::pair<char32_t, Operator>(unicode, Operator(priorety, run)));
+    unicodeToOperator.insert(std::pair<char32_t, Operator>(unicode, Operator(priorety,unicode,run)));
 }
 
 //add unicode digit pair to hashmap
@@ -105,14 +105,14 @@ Bot::StringCalculator::insertOperatorInRPNList(std::list<std::unique_ptr<CountOb
             int priorety = op->priorety;
             if (priorety < operand->priorety + paranthesePriorety) {
                 index = list.insert(index,
-                                    std::make_unique<Operator>(operand->priorety + paranthesePriorety, operand->run));
+                                    std::make_unique<Operator>(operand->priorety + paranthesePriorety,operand->unicode ,operand->run));
                 index--;
                 return;
             }
         }
         index++;
     }
-    index = list.insert(index, std::make_unique<Operator>(operand->priorety + paranthesePriorety, operand->run));
+    index = list.insert(index, std::make_unique<Operator>(operand->priorety + paranthesePriorety,operand->unicode ,operand->run));
     index--;
 }
 

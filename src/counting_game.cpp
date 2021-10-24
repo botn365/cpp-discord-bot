@@ -13,9 +13,9 @@
 namespace Bot {
     Bot::CountingGame::CountingGame(std::string dataBase, int id) :
             channelID{0}, currentCount{0}, lastPlayer{nullptr}, id{id} {
-        int error = sqlite3_open(dataBase.c_str(),&db);
+        int error = sqlite3_open(dataBase.c_str(), &db);
         if (error) {
-            std::cout<<"failed to open dataBase"<<sqlite3_errmsg(db)<<"\n";
+            std::cout << "failed to open dataBase" << sqlite3_errmsg(db) << "\n";
             sqlite3_close(db);
             throw std::runtime_error("failed to open dataBase");
         }
@@ -27,50 +27,51 @@ namespace Bot {
     }
 
     void CountingGame::initDataBase(int id) {
-        char * msgError;
+        char *msgError;
         int error = sqlite3_exec(db,
                                  "CREATE TABLE PLAYER("
                                  "SNOWFLAKE INT PRIMARY KEY NOT NULL,"
                                  "TOTAL_CORRECT INT NOT NULL,"
                                  "TOTAL_FAILED INT NOT NULL,"
                                  "HIGHEST_COUNT INT NOT NULL);",
-                                 NULL,0,&msgError);
-        if (error != SQLITE_OK) { //if it erros that should mean the table already exists so then pull data from db to memory
+                                 NULL, 0, &msgError);
+        if (error !=
+            SQLITE_OK) { //if it erros that should mean the table already exists so then pull data from db to memory
             sqlite3_free(msgError);
             //load player data
-            error =  sqlite3_exec(db,"SELECT * FROM PLAYER;",CountingGame::populateHashSet,this,&msgError);
+            error = sqlite3_exec(db, "SELECT * FROM PLAYER;", CountingGame::populateHashSet, this, &msgError);
             if (error != SQLITE_OK) {
-                std::cout<<"on players init"<<msgError<<"\n";
+                std::cout << "on players init" << msgError << "\n";
                 sqlite3_free(msgError);
                 throw std::runtime_error("failed to load player data");
             }
             std::stringstream ss;
             //load game data
-            ss<<"SELECT * FROM GAME WHERE ID = "<<id<<";";
-            error =  sqlite3_exec(db,ss.str().c_str(),CountingGame::setServerValues,this,&msgError);
+            ss << "SELECT * FROM GAME WHERE ID = " << id << ";";
+            error = sqlite3_exec(db, ss.str().c_str(), CountingGame::setServerValues, this, &msgError);
             if (error != SQLITE_OK) {
-                std::cout<<"on game init"<<msgError<<"\n";
+                std::cout << "on game init" << msgError << "\n";
                 sqlite3_free(msgError);
                 throw std::runtime_error("failed to load game data");
             }
         } else { //if it does not error that means its a fresh db so create the tables we need
             int ec = sqlite3_exec(db,
-                         "CREATE TABLE GAME("
-                         "ID INT PRIMARY KEY NOT NULL,"
-                         "CHANNEL_ID INT NOT NULL,"
-                         "CURRENT_COUNT INT NOT NULL,"
-                         "LAST_PLAYER INT NOT NULL);",
-                         NULL,NULL,&msgError);
+                                  "CREATE TABLE GAME("
+                                  "ID INT PRIMARY KEY NOT NULL,"
+                                  "CHANNEL_ID INT NOT NULL,"
+                                  "CURRENT_COUNT INT NOT NULL,"
+                                  "LAST_PLAYER INT NOT NULL);",
+                                  NULL, NULL, &msgError);
             if (ec != SQLITE_OK) {
-                std::cout<<"crated player table but faild to create server database could be mallformed"<<"\n"
-                <<msgError<<"\n";
+                std::cout << "crated player table but faild to create server database could be mallformed" << "\n"
+                          << msgError << "\n";
                 throw std::runtime_error("error on database init");
             } else {
                 std::stringstream ss;
-                ss<<"INSERT INTO GAME VALUES("<<id<<","<<0<<","<<0<<","<<0<<");";
-                ec = sqlite3_exec(db,ss.str().c_str(),NULL,NULL,&msgError);
+                ss << "INSERT INTO GAME VALUES(" << id << "," << 0 << "," << 0 << "," << 0 << ");";
+                ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &msgError);
                 if (ec != SQLITE_OK) {
-                    std::cout<<"failed to insert game in to db "<<msgError<<"\n";
+                    std::cout << "failed to insert game in to db " << msgError << "\n";
                     sqlite3_free(msgError);
                     throw std::runtime_error("failed to insert game data in to DB");
                 }
@@ -80,27 +81,28 @@ namespace Bot {
 
     //callback for loading player data
     int CountingGame::populateHashSet(void *data, int argc, char **value, char **colName) {
-        CountingGame *game = (CountingGame*)data;
+        CountingGame *game = (CountingGame *) data;
         uint64_t snowflake = 0;
         uint64_t sucCount = 0;
         uint64_t failCount = 0;
         uint64_t highestCount = 0;
-        for (int i = 0;i<argc;i++) {
-            if (strcmp(colName[i],"SNOWFLAKE") == 0) {
+        for (int i = 0; i < argc; i++) {
+            if (strcmp(colName[i], "SNOWFLAKE") == 0) {
                 snowflake = std::stoll(value[i]);
-            } else if (strcmp(colName[i],"TOTAL_CORRECT") == 0) {
+            } else if (strcmp(colName[i], "TOTAL_CORRECT") == 0) {
                 sucCount = std::stoll(value[i]);
-            } else if (strcmp(colName[i],"TOTAL_FAILED") == 0) {
+            } else if (strcmp(colName[i], "TOTAL_FAILED") == 0) {
                 failCount = std::stoll(value[i]);
-            }else if (strcmp(colName[i],"HIGHEST_COUNT") == 0) {
+            } else if (strcmp(colName[i], "HIGHEST_COUNT") == 0) {
                 highestCount = std::stoll(value[i]);
             }
         }
         if (snowflake != 0) {
-            game->players.insert(std::pair<dpp::snowflake,Player>(snowflake,
-                                                                  Player(snowflake,sucCount,failCount,highestCount)));
+            game->players.insert(std::pair<dpp::snowflake, Player>(snowflake,
+                                                                   Player(snowflake, sucCount, failCount,
+                                                                          highestCount)));
         } else {
-            std::cout<<"no snowflake in init of players bad data in data base";
+            std::cout << "no snowflake in init of players bad data in data base";
         }
         return 0;
     }
@@ -111,16 +113,16 @@ namespace Bot {
         uint64_t currentCount = 0;
         uint64_t lastPlayerId = 0;
 
-        for (int i = 0;i<entries;i++) {
-            if (strcmp(colName[i],"CHANNEL_ID") == 0) {
+        for (int i = 0; i < entries; i++) {
+            if (strcmp(colName[i], "CHANNEL_ID") == 0) {
                 channelId = std::stoll(value[i]);
-            } else if (strcmp(colName[i],"CURRENT_COUNT") == 0) {
+            } else if (strcmp(colName[i], "CURRENT_COUNT") == 0) {
                 currentCount = std::stoll(value[i]);
-            } else if (strcmp(colName[i],"LAST_PLAYER") == 0) {
+            } else if (strcmp(colName[i], "LAST_PLAYER") == 0) {
                 lastPlayerId = std::stoll(value[i]);
             }
         }
-        CountingGame *game = (CountingGame*) countGamePtr;
+        CountingGame *game = (CountingGame *) countGamePtr;
         game->currentCount = currentCount;
         auto pair = game->players.find(channelId);
         if (pair != game->players.end()) {
@@ -133,16 +135,16 @@ namespace Bot {
     //save a player data back to the db
     void CountingGame::savePlayer(const Player &player) {
         std::stringstream ss;
-        ss<<"UPDATE PLAYER"<<"\n";
-        ss<<"SET TOTAL_CORRECT = "<<player.getCorectCount();
-        ss<<" , TOTAL_FAILED = "<<player.getFailedCount();
-        ss<<" , HIGHEST_COUNT = "<<player.getHighestCount()<<"\n";
-        ss<<"WHERE SNOWFLAKE = "<<player.userId<<";";
+        ss << "UPDATE PLAYER" << "\n";
+        ss << "SET TOTAL_CORRECT = " << player.getCorectCount();
+        ss << " , TOTAL_FAILED = " << player.getFailedCount();
+        ss << " , HIGHEST_COUNT = " << player.getHighestCount() << "\n";
+        ss << "WHERE SNOWFLAKE = " << player.userId << ";";
 
-        char * errmsg;
-        int ec = sqlite3_exec(db,ss.str().c_str(),NULL,NULL,&errmsg);
+        char *errmsg;
+        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
         if (ec != SQLITE_OK) {
-            std::cout<<"failed to save player "<<errmsg<<"\n";
+            std::cout << "failed to save player " << errmsg << "\n";
             sqlite3_free(errmsg);
         }
     }
@@ -150,19 +152,19 @@ namespace Bot {
     //save the game data back to the db
     void CountingGame::saveGame() {
         std::stringstream ss;
-        ss<<"UPDATE GAME"<<"\n";
-        ss<<"SET CHANNEL_ID = "<<channelID;
-        ss<<" , CURRENT_COUNT = "<<currentCount;
+        ss << "UPDATE GAME" << "\n";
+        ss << "SET CHANNEL_ID = " << channelID;
+        ss << " , CURRENT_COUNT = " << currentCount;
         if (lastPlayer != nullptr) {
-            ss<<" , LAST_PLAYER = "<<lastPlayer->userId;
+            ss << " , LAST_PLAYER = " << lastPlayer->userId;
         } else {
-            ss<<" , LAST_PLAYER = "<<0;
+            ss << " , LAST_PLAYER = " << 0;
         }
-        ss<<";";
-        char * errmsg;
-        int ec = sqlite3_exec(db,ss.str().c_str(),NULL,NULL,&errmsg);
+        ss << ";";
+        char *errmsg;
+        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
         if (ec != SQLITE_OK) {
-            std::cout<<"failed to save game "<<errmsg<<"\n";
+            std::cout << "failed to save game " << errmsg << "\n";
             sqlite3_free(errmsg);
         }
     }
@@ -171,12 +173,12 @@ namespace Bot {
     Player &CountingGame::addPlayer(dpp::snowflake id) {
         auto value = players.insert({id, Player{id}});
         std::stringstream ss;
-        ss<<"INSERT INTO PLAYER VALUES ("<<id<<","<<0<<","<<0<<","<<0<<");";
+        ss << "INSERT INTO PLAYER VALUES (" << id << "," << 0 << "," << 0 << "," << 0 << ");";
 
-        char * errmsg;
-        int ec = sqlite3_exec(db,ss.str().c_str(),NULL,NULL,&errmsg);
+        char *errmsg;
+        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
         if (ec != SQLITE_OK) {
-            std::cout<<"failed to add player to DB "<<errmsg<<"\n";
+            std::cout << "failed to add player to DB " << errmsg << "\n";
             sqlite3_free(errmsg);
         }
         return value.first->second;
@@ -185,15 +187,15 @@ namespace Bot {
     //calculate and check a message and update game data
     void Bot::CountingGame::count(dpp::cluster &bot, const dpp::message_create_t &message) {
         if (message.msg->channel_id == channelID) {
-            if(!shouldCount(message.msg->content)) {
+            if (!shouldCount(message.msg->content)) {
                 return;
             }
             const dpp::snowflake author = message.msg->author->id;
             if (currentCount != resetCount && lastPlayer != nullptr && author == lastPlayer->userId) {
-                reply(CountingGame::Type::SAME_USER, bot, message,0);
+                reply(CountingGame::Type::SAME_USER, bot, message, 0);
                 auto keySet = players.find(author);
                 if (keySet != players.end()) {
-                    addCountToPlayer(keySet->second,false);
+                    addCountToPlayer(keySet->second, false);
                     saveGame();
                 }
                 return;
@@ -205,12 +207,12 @@ namespace Bot {
             bool isCorrect = value == ++currentCount;
             auto keySet = players.find(author);
             if (keySet != players.end()) {
-                reply(addCountToPlayer(keySet->second, isCorrect), bot, message,value);
+                reply(addCountToPlayer(keySet->second, isCorrect), bot, message, value);
                 saveGame();
                 return;
             } else {
                 auto player = addPlayer(author);
-                reply(addCountToPlayer(player, isCorrect), bot, message,value);
+                reply(addCountToPlayer(player, isCorrect), bot, message, value);
                 saveGame();
                 return;
             }
@@ -229,7 +231,7 @@ namespace Bot {
                 bot.message_create(dpp::message(
                         message.msg->channel_id,
                         "<@" + std::to_string(message.msg->author->id) +
-                        "> Cant count. Gave Value "+std::to_string(cast)+". Count reset to 1"
+                        "> Cant count. Gave Value " + std::to_string(cast) + ". Count reset to 1"
                 ));
                 currentCount = resetCount;
                 break;
@@ -263,8 +265,8 @@ namespace Bot {
     //a check if the message should be calculated
     //TODO allow RPN and and number prefix
     bool CountingGame::shouldCount(const std::string_view &input) {
-        const char * index = input.data();
-        const char * end = input.data()+input.size();
+        const char *index = input.data();
+        const char *end = input.data() + input.size();
         while (index < end) {
             if (*index == '<') return false;
             if (*index == ' ') {
@@ -273,7 +275,7 @@ namespace Bot {
             }
             if (*index == '(') return true;
             char32_t unicode;
-            index = StringCalculator::getUnicode(index,unicode);
+            index = StringCalculator::getUnicode(index, unicode);
             int number = StringCalculator::getNumberFromUnicode(unicode);
             if (number != -1) return true;
             auto op = StringCalculator::getOperator(unicode);
@@ -340,7 +342,7 @@ namespace Bot {
         setChannel.set_type(dpp::ctxm_chat_input);
         setChannel.set_application_id(bot.me.id);
         setChannel.disable_default_permissions();
-        for (auto &command : settings.getCommandPermissions(nameSetChannel)) {
+        for (auto &command: settings.getCommandPermissions(nameSetChannel)) {
             setChannel.add_permission(command);
         }
         setChannel.add_option(
@@ -358,25 +360,67 @@ namespace Bot {
             );
             setCountChannel(value);
         });
+
+        dpp::slashcommand testNumber;
+        std::string nameTestNumber = "test_number";
+        testNumber.set_name(nameTestNumber);
+        testNumber.set_type(dpp::ctxm_chat_input);
+        testNumber.set_description("tests number with stack trace");
+        testNumber.set_application_id(bot.me.id);
+        for (auto &command: settings.getCommandPermissions(nameTestNumber)) {
+            testNumber.add_permission(command);
+        }
+        testNumber.add_option(
+                dpp::command_option(
+                        dpp::co_string, "calculation", "", true
+                ));
+        registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
+            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+            auto input = std::get<std::string>(cmd_data.options[0].value);
+            std::string_view view(input);
+            auto list = Bot::StringCalculator::convertStringToRPNList(view);
+            double value = Bot::StringCalculator::calculateFromRPNList(list);
+            std::stringstream ss;
+            ss << "value = " << value << "\n";
+            ss << "RPN stacktrace" << "\n";
+            for (auto &count: list) {
+                if (count->isOperator()) {
+                    Operator *op = (Operator *) &count;
+                    ss << op->unicode << "\n";
+                } else {
+                    Number *num = (Number *) &count;
+                    ss << num->value << "\n";
+                }
+            }
+            interaction.reply(dpp::ir_channel_message_with_source,
+                              dpp::message()
+                                      .set_type(dpp::mt_reply)
+                                      .set_flags(dpp::m_ephemeral)
+                                      .set_content(ss.str())
+            );
+        });
     }
 
     void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
-                                       std::function<void(const dpp::interaction_create_t &interaction)> interactionCallBack) {
-        bot.guild_command_create(command,settings.getServerId(),[&bot,command,this, interactionCallBack](const dpp::confirmation_callback_t &callback){
+                                       std::function<void(
+                                               const dpp::interaction_create_t &interaction)> interactionCallBack) {
+        bot.guild_command_create(command, settings.getServerId(), [&bot, command, this, interactionCallBack](
+                const dpp::confirmation_callback_t &callback) {
             if (callback.is_error()) {
                 std::cout << callback.get_error().message << "\n";
             }
             dpp::slashcommand cmd_data = std::get<dpp::slashcommand>(callback.value);
             uint64_t id = cmd_data.id;
-            auto returnValue = this->commands.insert(std::pair<uint64_t,dpp::slashcommand>(id,command));
+            auto returnValue = this->commands.insert(std::pair<uint64_t, dpp::slashcommand>(id, command));
             if (returnValue.second) {
                 returnValue.first->second.id = id;
             } else {
-                std::cout<<"ERROR failed to register command"<<"\n";
+                std::cout << "ERROR failed to register command" << "\n";
             }
-            this->interactions.insert(std::pair<uint64_t,std::function<void(const dpp::interaction_create_t &interaction)>>(
-                    id,
-                    interactionCallBack
+            this->interactions.insert(
+                    std::pair<uint64_t, std::function<void(const dpp::interaction_create_t &interaction)>>(
+                            id,
+                            interactionCallBack
                     ));
         });
     }
