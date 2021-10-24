@@ -57,6 +57,8 @@ namespace Bot {
 
         static Operator *getOperator(char32_t unicode);
 
+        static std::string unicodeToString(char32_t unicode);
+
     private:
         static int getParanthese(char32_t &unicode);
 
