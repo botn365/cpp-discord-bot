@@ -400,6 +400,40 @@ namespace Bot {
                                       .set_content(ss.str())
             );
         });
+
+        dpp::slashcommand getServerStats;
+        std::string nameGetServerStats = "get_stats";
+        getServerStats.set_name(nameGetServerStats);
+        getServerStats.set_description("get top 10 player stats from pos");
+        getServerStats.set_type(dpp::ctxm_chat_input);
+        getServerStats.set_application_id(bot.me.id);
+        for (auto &command: settings.getCommandPermissions(nameGetServerStats)) {
+            getServerStats.add_permission(command);
+        }
+        getServerStats.add_option(
+                dpp::command_option(
+                        dpp::co_integer, "start_pos", "starts pos of listing"
+                ));
+        registerCommand(bot, settings, getServerStats, [this](const dpp::interaction_create_t &interaction) {
+            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+            uint64_t startPos = 0;
+            if (!cmd_data.options.empty()) {
+                startPos = std::get<uint64_t>(cmd_data.options[0].value);
+            }
+            auto players = getRankedPlayers(10, startPos);
+            std::stringstream ss;
+            ss << "Ranking from pos " << startPos << "\n";
+            int i = 0;
+            for (auto &player: players) {
+                ss << "#" << i++ << " <@" << player->userId << ">, " << player->getHighestCount() << "\n";
+            }
+            interaction.reply(dpp::ir_channel_message_with_source,
+                              dpp::message()
+                                      .set_type(dpp::mt_reply)
+                                      .set_flags(dpp::m_ephemeral)
+                                      .set_content(ss.str())
+            );
+        });
     }
 
     void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
