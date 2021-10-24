@@ -49,13 +49,18 @@ namespace Bot {
 
         void saveGame();
 
-        void onInteraction(const dpp::interaction_create_t &interaction);
+        bool onInteraction(const dpp::interaction_create_t &interaction);
 
         void addCommands(dpp::cluster &bot, Settings &settings);
+
+        void registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
+                             std::function<void(const dpp::interaction_create_t &interaction)> interactionCallBack);
 
     private:
         Type addCountToPlayer(Player &player,bool correct);
         std::unordered_map<dpp::snowflake, Player> players;
+        std::unordered_map<uint64_t,dpp::slashcommand> commands;
+        std::unordered_map<uint64_t,std::function<void(const dpp::interaction_create_t &interaction)>> interactions;
         int id;
         dpp::snowflake channelID;
         uint64_t currentCount;

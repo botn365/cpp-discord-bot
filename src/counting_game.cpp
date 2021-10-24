@@ -320,41 +320,59 @@ namespace Bot {
         return returnList;
     }
 
-    void CountingGame::onInteraction(const dpp::interaction_create_t &interaction) {
+    bool CountingGame::onInteraction(const dpp::interaction_create_t &interaction) {
         if (interaction.command.type == dpp::it_application_command) {
             dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-            if (cmd_data.name == "set_counting_channel") {
-                auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content("<#"+ std::to_string(value)+"> has been set as counting channel")
-                );
-                setCountChannel(value);
+            auto result = interactions.find(cmd_data.id);
+            if (result != interactions.end()) {
+                result->second(interaction);
+                return true;
             }
         }
+        return false;
     }
 
     void CountingGame::addCommands(dpp::cluster &bot, Settings &settings) {
         dpp::slashcommand setChannel;
-        std::string name = "set_counting_channel";
-        setChannel.set_name(name);
+        std::string nameSetChannel = "set_counting_channel";
+        setChannel.set_name(nameSetChannel);
         setChannel.set_description("set the channel in wich the counting happens");
         setChannel.set_type(dpp::ctxm_chat_input);
         setChannel.set_application_id(bot.me.id);
         setChannel.disable_default_permissions();
-        for (auto &command : settings.getCommandPermissions(name)) {
+        for (auto &command : settings.getCommandPermissions(nameSetChannel)) {
             setChannel.add_permission(command);
         }
         setChannel.add_option(
                 dpp::command_option(
-                        dpp::co_channel, "channel", "set the channel where counting happens", true
+                        dpp::co_channel, "channel", "channel where counting happens", true
                 ));
-        bot.guild_command_create(setChannel,settings.getServerId(),[&bot](const dpp::confirmation_callback_t &callback){
+        registerCommand(bot, settings, setChannel, [this](const dpp::interaction_create_t &interaction) {
+            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+            auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
+            interaction.reply(dpp::ir_channel_message_with_source,
+                              dpp::message()
+                                      .set_type(dpp::mt_reply)
+                                      .set_flags(dpp::m_ephemeral)
+                                      .set_content("<#" + std::to_string(value) + "> has been set as counting channel")
+            );
+            setCountChannel(value);
+        });
+    }
+
+    void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
+                                       std::function<void(const dpp::interaction_create_t &interaction)> interactionCallBack) {
+        bot.guild_command_create(command,settings.getServerId(),[&bot,&command,this, &interactionCallBack](const dpp::confirmation_callback_t &callback){
             if (callback.is_error()) {
                 std::cout << callback.get_error().message << "\n";
             }
+            this->commands.insert(std::pair<uint64_t,dpp::slashcommand>(command.id,command));
+            this->interactions.insert(std::pair<uint64_t,std::function<void(const dpp::interaction_create_t &interaction)>>(
+                    command.id,
+                    interactionCallBack
+                    ));
         });
     }
+
+
 }
