@@ -102,6 +102,9 @@ namespace Bot {
             game->players.insert(std::pair<dpp::snowflake, Player>(snowflake,
                                                                    Player(snowflake, sucCount, failCount,
                                                                           highestCount)));
+            if (game->highestCount < highestCount) {
+                game->highestCount = highestCount;
+            }
         } else {
             std::cout << "no snowflake in init of players bad data in data base";
         }
@@ -208,6 +211,9 @@ namespace Bot {
             value = std::floor(value);
             bool isCorrect = value == ++currentCount;
             auto keySet = players.find(author);
+            if (isCorrect && highestCount < currentCount) {
+                highestCount = currentCount;
+            }
             if (keySet != players.end()) {
                 reply(addCountToPlayer(keySet->second, isCorrect), bot, message, value);
                 saveGame();
@@ -226,7 +232,11 @@ namespace Bot {
         int64_t cast = value;
         switch (type) {
             case Bot::CountingGame::Type::CORRECT:
-                bot.message_add_reaction(message.msg->id, message.msg->channel_id, "✅");
+                if (currentCount == highestCount) {
+                    bot.message_add_reaction(message.msg->id, message.msg->channel_id, "☑");
+                } else {
+                    bot.message_add_reaction(message.msg->id, message.msg->channel_id, "✅");
+                }
                 break;
             case Bot::CountingGame::Type::INCORRECT:
                 bot.message_add_reaction(message.msg->id, message.msg->channel_id, "❌");
@@ -490,6 +500,31 @@ namespace Bot {
                                               .set_content("User Not Found")
                     );
                 }
+            });
+        }
+
+        {
+            dpp::slashcommand command;
+            std::string name = "get_server_stats";
+            command.set_name(name);
+            command.set_description("get general game stats");
+            command.set_type(dpp::ctxm_chat_input);
+            command.set_application_id(bot.me.id);
+            for (auto &com: settings.getCommandPermissions(name)) {
+                command.add_permission(com);
+            }
+            registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+                std::stringstream ss;
+                ss << "Server Stats\n";
+                ss << "Current Count = " << currentCount << "\n";
+                ss << "Last User <@" << lastPlayer->userId << ">\n";
+                ss << "Highest Count = " << highestCount << "\n";
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(ss.str())
+                );
             });
         }
     }

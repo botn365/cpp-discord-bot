@@ -65,6 +65,7 @@ namespace Bot {
         dpp::snowflake channelID;
         uint64_t currentCount;
         Player *lastPlayer;
+        uint64_t highestCount = 0;
         uint64_t resetCount = 0;
         sqlite3 *db;
     };
