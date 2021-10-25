@@ -449,14 +449,15 @@ namespace Bot {
             auto returnValue = this->commands.insert(std::pair<uint64_t, dpp::slashcommand>(id, command));
             if (returnValue.second) {
                 returnValue.first->second.id = id;
+                this->interactions.insert(
+                        std::pair<uint64_t, std::function<void(const dpp::interaction_create_t &interaction)>>(
+                                id,
+                                interactionCallBack
+                        ));
+                std::cout<<"command "<<returnValue.first->second.name<<"ready";
             } else {
                 std::cout << "ERROR failed to register command" << "\n";
             }
-            this->interactions.insert(
-                    std::pair<uint64_t, std::function<void(const dpp::interaction_create_t &interaction)>>(
-                            id,
-                            interactionCallBack
-                    ));
         });
     }
 
