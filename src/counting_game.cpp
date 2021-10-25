@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <iomanip>
 
 
 namespace Bot {
@@ -434,6 +435,54 @@ namespace Bot {
                                       .set_content(ss.str())
             );
         });
+
+        dpp::slashcommand getPlayerStats;
+        std::string nameGetPlayerStats = "get_user_stats";
+        getPlayerStats.set_name(nameGetPlayerStats);
+        getPlayerStats.set_description("get stats of a user");
+        getPlayerStats.set_type(dpp::ctxm_chat_input);
+        getPlayerStats.set_application_id(bot.me.id);
+        for (auto &command: settings.getCommandPermissions(nameGetPlayerStats)) {
+            getPlayerStats.add_permission(command);
+        }
+        getPlayerStats.add_option(
+                dpp::command_option(
+                        dpp::co_user, "user", "user to get stts from"
+                ));
+        registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
+            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+            dpp::snowflake user_id;
+            if (!cmd_data.options.empty()) {
+                user_id = std::get<dpp::snowflake>(cmd_data.options[0].value);
+            } else {
+                user_id = interaction.command.usr.id;
+            }
+            //350016920264638485
+            auto userPair = players.find(user_id);
+            if (userPair != players.end()) {
+                auto &user = userPair->second;
+                std::stringstream ss;
+                ss << "<@" << user_id << "> Stats.\n";
+                ss << "Highest Count = " << user.getHighestCount() << "\n";
+                ss << "Success Rate = " << std::setprecision(3) << user.getSuccessRate() << "\n";
+                ss << "Total Count = " << user.getTotalCount() << "\n";
+                ss << "Total Correct = " << user.getCorectCount() << "\n";
+                ss << "Total Failed = " << user.getFailedCount() << "\n";
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(ss.str())
+                );
+            } else {
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content("User Not Found")
+                );
+            }
+        });
     }
 
     void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
@@ -454,7 +503,7 @@ namespace Bot {
                                 id,
                                 interactionCallBack
                         ));
-                std::cout<<"command "<<returnValue.first->second.name<<"ready";
+                std::cout << "command " << returnValue.first->second.name << "ready";
             } else {
                 std::cout << "ERROR failed to register command" << "\n";
             }
