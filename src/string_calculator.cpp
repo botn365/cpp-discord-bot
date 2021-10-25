@@ -48,17 +48,17 @@ namespace Bot {
                         }
                         if (indexUp) {
                             index--;
-                        } else {
                             indexUp = false;
                         }
+                        bracketPriorety += bracket;
                         continue;
                     }
                     if (bracket < 0) {
                         indexUp = false;
+                        bracketPriorety += bracket;
                         continue;
                         //numberWasLast = false;
                     }
-                    bracketPriorety += bracket;
                     if (unicode != ' ') break;
                 }
             }

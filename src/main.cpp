@@ -34,6 +34,7 @@ int main() {
 
     bot.on_ready([&bot, &settings, &game](const dpp::ready_t &event) {
         game.addCommands(bot,settings);
+        std::cout << "bot ready" << "\n";
     });
 
     std::cout << "start bot" << "\n";
