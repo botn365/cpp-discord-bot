@@ -337,152 +337,161 @@ namespace Bot {
     }
 
     void CountingGame::addCommands(dpp::cluster &bot, Settings &settings) {
-        dpp::slashcommand setChannel;
-        std::string nameSetChannel = "set_counting_channel";
-        setChannel.set_name(nameSetChannel);
-        setChannel.set_description("set the channel in wich the counting happens");
-        setChannel.set_type(dpp::ctxm_chat_input);
-        setChannel.set_application_id(bot.me.id);
-        setChannel.disable_default_permissions();
-        for (auto &command: settings.getCommandPermissions(nameSetChannel)) {
-            setChannel.add_permission(command);
+        {
+            dpp::slashcommand setChannel;
+            std::string nameSetChannel = "set_counting_channel";
+            setChannel.set_name(nameSetChannel);
+            setChannel.set_description("set the channel in wich the counting happens");
+            setChannel.set_type(dpp::ctxm_chat_input);
+            setChannel.set_application_id(bot.me.id);
+            setChannel.disable_default_permissions();
+            for (auto &command: settings.getCommandPermissions(nameSetChannel)) {
+                setChannel.add_permission(command);
+            }
+            setChannel.add_option(
+                    dpp::command_option(
+                            dpp::co_channel, "channel", "channel where counting happens", true
+                    ));
+            registerCommand(bot, settings, setChannel, [this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+                auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(
+                                                  "<#" + std::to_string(value) + "> has been set as counting channel")
+                );
+                setCountChannel(value);
+            });
         }
-        setChannel.add_option(
-                dpp::command_option(
-                        dpp::co_channel, "channel", "channel where counting happens", true
-                ));
-        registerCommand(bot, settings, setChannel, [this](const dpp::interaction_create_t &interaction) {
-            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-            auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
-            interaction.reply(dpp::ir_channel_message_with_source,
-                              dpp::message()
-                                      .set_type(dpp::mt_reply)
-                                      .set_flags(dpp::m_ephemeral)
-                                      .set_content("<#" + std::to_string(value) + "> has been set as counting channel")
-            );
-            setCountChannel(value);
-        });
 
-        dpp::slashcommand testNumber;
-        std::string nameTestNumber = "test_number";
-        testNumber.set_name(nameTestNumber);
-        testNumber.set_type(dpp::ctxm_chat_input);
-        testNumber.set_description("tests number with stack trace");
-        testNumber.set_application_id(bot.me.id);
-        for (auto &command: settings.getCommandPermissions(nameTestNumber)) {
-            testNumber.add_permission(command);
-        }
-        testNumber.add_option(
-                dpp::command_option(
-                        dpp::co_string, "calculation", "calculation", true
-                ));
-        registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
-            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-            auto input = std::get<std::string>(cmd_data.options[0].value);
-            std::string_view view(input);
-            auto list = Bot::StringCalculator::convertStringToRPNList(view);
-            double value = Bot::StringCalculator::calculateFromRPNList(list);
-            std::stringstream ss;
-            ss << "value = " << value << "\n";
-            ss << "RPN stacktrace" << "\n";
-            for (auto &count: list) {
-                if (count->isOperator()) {
-                    Operator *op = (Operator *) count.get();
-                    ss << Bot::StringCalculator::unicodeToString(op->unicode) << "\n";
-                } else {
-                    Number *num = (Number *) count.get();
-                    ss << num->value << "\n";
-                }
+        {
+            dpp::slashcommand testNumber;
+            std::string nameTestNumber = "test_number";
+            testNumber.set_name(nameTestNumber);
+            testNumber.set_type(dpp::ctxm_chat_input);
+            testNumber.set_description("tests number with stack trace");
+            testNumber.set_application_id(bot.me.id);
+            for (auto &command: settings.getCommandPermissions(nameTestNumber)) {
+                testNumber.add_permission(command);
             }
-            interaction.reply(dpp::ir_channel_message_with_source,
-                              dpp::message()
-                                      .set_type(dpp::mt_reply)
-                                      .set_flags(dpp::m_ephemeral)
-                                      .set_content(ss.str())
-            );
-        });
-
-        dpp::slashcommand getServerStats;
-        std::string nameGetServerStats = "get_stats";
-        getServerStats.set_name(nameGetServerStats);
-        getServerStats.set_description("get top 10 player stats from pos");
-        getServerStats.set_type(dpp::ctxm_chat_input);
-        getServerStats.set_application_id(bot.me.id);
-        for (auto &command: settings.getCommandPermissions(nameGetServerStats)) {
-            getServerStats.add_permission(command);
-        }
-        getServerStats.add_option(
-                dpp::command_option(
-                        dpp::co_integer, "start_pos", "starts pos of listing"
-                ));
-        registerCommand(bot, settings, getServerStats, [this](const dpp::interaction_create_t &interaction) {
-            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-            uint64_t startPos = 0;
-            if (!cmd_data.options.empty()) {
-                startPos = std::get<int64_t>(cmd_data.options[0].value);
-            }
-            auto players = getRankedPlayers(10, startPos);
-            std::stringstream ss;
-            ss << "Ranking from pos " << startPos << "\n";
-            int i = 0;
-            for (auto &player: players) {
-                ss << "#" << i++ << " <@" << player->userId << ">, " << player->getHighestCount() << "\n";
-            }
-            interaction.reply(dpp::ir_channel_message_with_source,
-                              dpp::message()
-                                      .set_type(dpp::mt_reply)
-                                      .set_flags(dpp::m_ephemeral)
-                                      .set_content(ss.str())
-            );
-        });
-
-        dpp::slashcommand getPlayerStats;
-        std::string nameGetPlayerStats = "get_user_stats";
-        getPlayerStats.set_name(nameGetPlayerStats);
-        getPlayerStats.set_description("get stats of a user");
-        getPlayerStats.set_type(dpp::ctxm_chat_input);
-        getPlayerStats.set_application_id(bot.me.id);
-        for (auto &command: settings.getCommandPermissions(nameGetPlayerStats)) {
-            getPlayerStats.add_permission(command);
-        }
-        getPlayerStats.add_option(
-                dpp::command_option(
-                        dpp::co_user, "user", "user to get stts from"
-                ));
-        registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
-            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-            dpp::snowflake user_id;
-            if (!cmd_data.options.empty()) {
-                user_id = std::get<dpp::snowflake>(cmd_data.options[0].value);
-            } else {
-                user_id = interaction.command.usr.id;
-            }
-            //350016920264638485
-            auto userPair = players.find(user_id);
-            if (userPair != players.end()) {
-                auto &user = userPair->second;
+            testNumber.add_option(
+                    dpp::command_option(
+                            dpp::co_string, "calculation", "calculation", true
+                    ));
+            registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+                auto input = std::get<std::string>(cmd_data.options[0].value);
+                std::string_view view(input);
+                auto list = Bot::StringCalculator::convertStringToRPNList(view);
+                double value = Bot::StringCalculator::calculateFromRPNList(list);
                 std::stringstream ss;
-                ss << "<@" << user_id << "> Stats.\n";
-                ss << "Highest Count = " << user.getHighestCount() << "\n";
-                ss << "Success Rate = " << std::setprecision(3) << user.getSuccessRate() << "\n";
-                ss << "Total Count = " << user.getTotalCount() << "\n";
-                ss << "Total Correct = " << user.getCorectCount() << "\n";
-                ss << "Total Failed = " << user.getFailedCount() << "\n";
+                ss << "value = " << value << "\n";
+                ss << "RPN stacktrace" << "\n";
+                for (auto &count: list) {
+                    if (count->isOperator()) {
+                        Operator *op = (Operator *) count.get();
+                        ss << Bot::StringCalculator::unicodeToString(op->unicode) << "\n";
+                    } else {
+                        Number *num = (Number *) count.get();
+                        ss << num->value << "\n";
+                    }
+                }
                 interaction.reply(dpp::ir_channel_message_with_source,
                                   dpp::message()
                                           .set_type(dpp::mt_reply)
                                           .set_flags(dpp::m_ephemeral)
                                           .set_content(ss.str())
                 );
-            } else {
+            });
+        }
+
+        {
+            dpp::slashcommand getStats;
+            std::string nameGetStats = "get_stats";
+            getStats.set_name(nameGetStats);
+            getStats.set_description("get top 10 player stats from pos");
+            getStats.set_type(dpp::ctxm_chat_input);
+            getStats.set_application_id(bot.me.id);
+            for (auto &command: settings.getCommandPermissions(nameGetStats)) {
+                getStats.add_permission(command);
+            }
+            getStats.add_option(
+                    dpp::command_option(
+                            dpp::co_integer, "start_pos", "starts pos of listing"
+                    ));
+            registerCommand(bot, settings, getStats, [this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+                uint64_t startPos = 0;
+                if (!cmd_data.options.empty()) {
+                    startPos = std::get<int64_t>(cmd_data.options[0].value);
+                }
+                auto players = getRankedPlayers(10, startPos);
+                std::stringstream ss;
+                ss << "Ranking from pos " << startPos << "\n";
+                int i = 0;
+                for (auto &player: players) {
+                    ss << "#" << i++ << " <@" << player->userId << ">, " << player->getHighestCount() << "\n";
+                }
                 interaction.reply(dpp::ir_channel_message_with_source,
                                   dpp::message()
                                           .set_type(dpp::mt_reply)
                                           .set_flags(dpp::m_ephemeral)
-                                          .set_content("User Not Found")
+                                          .set_content(ss.str())
                 );
+            });
+        }
+
+        {
+            dpp::slashcommand getPlayerStats;
+            std::string nameGetPlayerStats = "get_user_stats";
+            getPlayerStats.set_name(nameGetPlayerStats);
+            getPlayerStats.set_description("get stats of a user");
+            getPlayerStats.set_type(dpp::ctxm_chat_input);
+            getPlayerStats.set_application_id(bot.me.id);
+            for (auto &command: settings.getCommandPermissions(nameGetPlayerStats)) {
+                getPlayerStats.add_permission(command);
             }
-        });
+            getPlayerStats.add_option(
+                    dpp::command_option(
+                            dpp::co_user, "user", "user to get stts from"
+                    ));
+            registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+                dpp::snowflake user_id;
+                if (!cmd_data.options.empty()) {
+                    user_id = std::get<dpp::snowflake>(cmd_data.options[0].value);
+                } else {
+                    user_id = interaction.command.usr.id;
+                }
+                //350016920264638485
+                auto userPair = players.find(user_id);
+                if (userPair != players.end()) {
+                    auto &user = userPair->second;
+                    std::stringstream ss;
+                    ss << "<@" << user_id << "> Stats.\n";
+                    ss << "Highest Count = " << user.getHighestCount() << "\n";
+                    ss << "Success Rate = " << std::setprecision(3) << user.getSuccessRate() << "\n";
+                    ss << "Total Count = " << user.getTotalCount() << "\n";
+                    ss << "Total Correct = " << user.getCorectCount() << "\n";
+                    ss << "Total Failed = " << user.getFailedCount() << "\n";
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_flags(dpp::m_ephemeral)
+                                              .set_content(ss.str())
+                    );
+                } else {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_flags(dpp::m_ephemeral)
+                                              .set_content("User Not Found")
+                    );
+                }
+            });
+        }
     }
 
     void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
