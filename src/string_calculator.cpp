@@ -38,6 +38,7 @@ namespace Bot {
                     insertOperatorInRPNList(list, index, operatorLambda, bracketPriorety);
                     //indexUp = true;
                     numberWasLast = false;
+                    indexUp = false;
                     if (unicode == '!') index++;
                 } else {
                     int bracket = getParanthese(unicode);
