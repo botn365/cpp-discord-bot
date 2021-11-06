@@ -503,30 +503,30 @@ namespace Bot {
             });
         }
 
-        {
-            dpp::slashcommand command;
-            std::string name = "get_server_stats";
-            command.set_name(name);
-            command.set_description("get general game stats");
-            command.set_type(dpp::ctxm_chat_input);
-            command.set_application_id(bot.me.id);
-            for (auto &com: settings.getCommandPermissions(name)) {
-                command.add_permission(com);
-            }
-            registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
-                std::stringstream ss;
-                ss << "Server Stats\n";
-                ss << "Current Count = " << currentCount << "\n";
-                ss << "Last User <@" << lastPlayer->userId << ">\n";
-                ss << "Highest Count = " << highestCount << "\n";
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(ss.str())
-                );
-            });
-        }
+//        {
+//            dpp::slashcommand command;
+//            std::string name = "get_server_stats";
+//            command.set_name(name);
+//            command.set_description("get general game stats");
+//            command.set_type(dpp::ctxm_chat_input);
+//            command.set_application_id(bot.me.id);
+//            for (auto &com: settings.getCommandPermissions(name)) {
+//                command.add_permission(com);
+//            }
+//            registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+//                std::stringstream ss;
+//                ss << "Server Stats\n";
+//                ss << "Current Count = " << currentCount << "\n";
+//                ss << "Last User <@" << lastPlayer->userId << ">\n";
+//                ss << "Highest Count = " << highestCount << "\n";
+//                interaction.reply(dpp::ir_channel_message_with_source,
+//                                  dpp::message()
+//                                          .set_type(dpp::mt_reply)
+//                                          .set_flags(dpp::m_ephemeral)
+//                                          .set_content(ss.str())
+//                );
+//            });
+//        }
     }
 
     void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
