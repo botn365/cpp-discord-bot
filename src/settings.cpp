@@ -3,15 +3,31 @@
 //
 
 #include "../include/settings.hpp"
-#include <fstream>
 #include "../include/load_operators.hpp"
+
+#include <fstream>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 namespace Bot {
     Settings::Settings(std::string file) {
-        auto settings = LoadOperators::fileToString(file);
+        auto settings = LoadOperators::iFileToString(file);
         doc.Parse(settings.c_str());
         if (doc.HasParseError()) {
             throw std::runtime_error("failed to parse json");
+        }
+        saveLocation = std::move(file);
+    }
+
+    void Settings::save() {
+        std::ofstream stream(saveLocation,std::ios::trunc);
+        if (stream.is_open()) {
+            rapidjson::StringBuffer buffer;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            doc.Accept(writer);
+            auto newJsonString = buffer.GetString();
+            stream.write(newJsonString,buffer.GetLength());
+            stream.close();
         }
     }
 
@@ -61,6 +77,7 @@ namespace Bot {
                         }
                         permission.permission = permData["allow"].GetBool();
                         permission.id = permData["id"].GetInt64();
+                        list.push_back(permission);
                     }
                     break;
                 }

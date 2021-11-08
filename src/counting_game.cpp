@@ -4,6 +4,7 @@
 
 #include "../include/counting_game.hpp"
 #include "../include/string_calculator.hpp"
+#include "../include/app.hpp"
 
 #include <sstream>
 #include <string>
@@ -334,11 +335,11 @@ namespace Bot {
         return returnList;
     }
 
-    bool CountingGame::onInteraction(const dpp::interaction_create_t &interaction) {
+    bool CountingGame::onInteraction(const dpp::interaction_create_t &interaction, App *app) {
         if (interaction.command.type == dpp::it_application_command) {
             dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-            auto result = interactions.find(cmd_data.id);
-            if (result != interactions.end()) {
+            auto result = app->interactions.find(cmd_data.id);
+            if (result != app->interactions.end()) {
                 result->second(interaction);
                 return true;
             }
@@ -346,7 +347,7 @@ namespace Bot {
         return false;
     }
 
-    void CountingGame::addCommands(dpp::cluster &bot, Settings &settings) {
+    void CountingGame::addCommands(dpp::cluster &bot, Settings &settings,App *app) {
         {
             dpp::slashcommand setChannel;
             std::string nameSetChannel = "set_counting_channel";
@@ -362,7 +363,7 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_channel, "channel", "channel where counting happens", true
                     ));
-            registerCommand(bot, settings, setChannel, [this](const dpp::interaction_create_t &interaction) {
+            app->registerCommand(bot, settings, setChannel, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
                 interaction.reply(dpp::ir_channel_message_with_source,
@@ -390,7 +391,7 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_string, "calculation", "calculation", true
                     ));
-            registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
+            app->registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 auto input = std::get<std::string>(cmd_data.options[0].value);
                 std::string_view view(input);
@@ -431,7 +432,7 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_integer, "start_pos", "starts pos of listing"
                     ));
-            registerCommand(bot, settings, getStats, [this](const dpp::interaction_create_t &interaction) {
+            app->registerCommand(bot, settings, getStats, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 uint64_t startPos = 0;
                 if (!cmd_data.options.empty()) {
@@ -467,7 +468,7 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_user, "user", "user to get stts from"
                     ));
-            registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
+            app->registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 dpp::snowflake user_id;
                 if (!cmd_data.options.empty()) {
@@ -502,56 +503,34 @@ namespace Bot {
                 }
             });
         }
-
-//        {
-//            dpp::slashcommand command;
-//            std::string name = "get_server_stats";
-//            command.set_name(name);
-//            command.set_description("get general game stats");
-//            command.set_type(dpp::ctxm_chat_input);
-//            command.set_application_id(bot.me.id);
-//            for (auto &com: settings.getCommandPermissions(name)) {
-//                command.add_permission(com);
-//            }
-//            registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
-//                std::stringstream ss;
-//                ss << "Server Stats\n";
-//                ss << "Current Count = " << currentCount << "\n";
-//                ss << "Last User <@" << lastPlayer->userId << ">\n";
-//                ss << "Highest Count = " << highestCount << "\n";
-//                interaction.reply(dpp::ir_channel_message_with_source,
-//                                  dpp::message()
-//                                          .set_type(dpp::mt_reply)
-//                                          .set_flags(dpp::m_ephemeral)
-//                                          .set_content(ss.str())
-//                );
-//            });
-//        }
-    }
-
-    void CountingGame::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
-                                       std::function<void(
-                                               const dpp::interaction_create_t &interaction)> interactionCallBack) {
-        bot.guild_command_create(command, settings.getServerId(), [&bot, command, this, interactionCallBack](
-                const dpp::confirmation_callback_t &callback) {
-            if (callback.is_error()) {
-                std::cout << callback.get_error().message << "\n";
+        {
+            dpp::slashcommand command;
+            std::string name = "get_server_stats";
+            command.set_name(name);
+            command.set_description("get general game stats");
+            command.set_type(dpp::ctxm_chat_input);
+            command.set_application_id(bot.me.id);
+            for (auto &com: settings.getCommandPermissions(name)) {
+                command.add_permission(com);
             }
-            dpp::slashcommand cmd_data = std::get<dpp::slashcommand>(callback.value);
-            uint64_t id = cmd_data.id;
-            auto returnValue = this->commands.insert(std::pair<uint64_t, dpp::slashcommand>(id, command));
-            if (returnValue.second) {
-                returnValue.first->second.id = id;
-                this->interactions.insert(
-                        std::pair<uint64_t, std::function<void(const dpp::interaction_create_t &interaction)>>(
-                                id,
-                                interactionCallBack
-                        ));
-                std::cout << "command " << returnValue.first->second.name << "ready";
-            } else {
-                std::cout << "ERROR failed to register command" << "\n";
-            }
-        });
+            app->registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+                std::stringstream ss;
+                ss << "Server Stats\n";
+                ss << "Current Count = " << currentCount << "\n";
+                if (lastPlayer != nullptr) {
+                    ss << "Last User <@" << lastPlayer->userId << ">\n";
+                } else {
+                    ss << "No Last User\n";
+                }
+                ss << "Highest Count = " << highestCount << "\n";
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(ss.str())
+                );
+            });
+        }
     }
 
 

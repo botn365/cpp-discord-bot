@@ -19,7 +19,7 @@ namespace Bot {
     class LoadOperators {
     public:
         static void loadNumbers(const std::string &translationFile) {
-            auto input = fileToString(translationFile);
+            auto input = iFileToString(translationFile);
             rapidjson::Document doc;
             doc.Parse(input.c_str());
             if (doc.HasParseError()) {
@@ -174,7 +174,7 @@ namespace Bot {
             });
         }
 
-        static std::string fileToString(std::string file) {
+        static std::string iFileToString(std::string file) {
             std::ifstream inputStream(file);
             if (!inputStream.is_open()) {
                 throw std::runtime_error(file+" not found");

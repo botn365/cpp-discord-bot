@@ -23,10 +23,15 @@ namespace Bot {
 
         const uint64_t getServerId();
 
+        void save();
+
         std::vector<dpp::command_permission> getCommandPermissions(std::string &commandName);
+
+        rapidjson::Document &getDocument() {return doc;}
 
     private:
         rapidjson::Document doc;
+        std::string saveLocation;
     };
 }
 
