@@ -45,6 +45,8 @@ namespace Bot {
 
         void onMessageReactionRemove(App *app, const dpp::message_reaction_remove_t &event);
 
+        void removeAllRollsOfReaction(App *app,dpp::snowflake channelID,Roll &roll);
+
     private:
         std::vector<Roll> rolls;
     };

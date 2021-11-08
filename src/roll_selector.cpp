@@ -141,9 +141,8 @@ namespace Bot {
 
                 for (auto roll = rolls.begin(); roll != rolls.end();) {
                     if (roll->messageId == messageID && roll->emote == emote) {
+                        removeAllRollsOfReaction(app,interaction.command.channel_id,*roll);
                         roll = rolls.erase(roll);
-                        app->bot->message_delete_reaction_emoji(messageID, interaction.command.channel_id,
-                                                                emote.getStringId());
                     } else {
                         roll++;
                     }
@@ -173,6 +172,24 @@ namespace Bot {
             }, 1);
         }
         baseCommand.add_option(command);
+    }
+
+    void RollSelector::removeAllRollsOfReaction(App *app,dpp::snowflake channelID,Roll &roll) {
+        dpp::snowflake rollID = roll.rollId;
+        auto msgID = roll.messageId;
+        auto emote = roll.emote.getStringId();
+        app->bot->message_get_reactions(roll.messageId,channelID,emote,0,0,0,[app,rollID,msgID,channelID,emote](const dpp::confirmation_callback_t &callback){
+            if (callback.is_error()) {
+                auto err = callback.get_error();
+                std::cout<<err.message<<"\n";
+                return;
+            }
+            auto &users = std::get<dpp::user_map>(callback.value);
+            for (auto &user : users) {
+                app->bot->guild_member_delete_role(app->settings->getServerId(), user.second.id, rollID);
+            }
+            app->bot->message_delete_reaction_emoji(msgID, channelID,emote);
+        });
     }
 
     void RollSelector::onMessageReactionAdd(App *app, const dpp::message_reaction_add_t &event) {
