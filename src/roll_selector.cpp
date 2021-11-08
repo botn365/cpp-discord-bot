@@ -25,7 +25,7 @@ namespace Bot {
         if (id == 0) {
             return name;
         } else {
-            return name+":"+std::to_string(id);
+            return name + ":" + std::to_string(id);
         }
     }
 
@@ -79,21 +79,26 @@ namespace Bot {
                     roll.messageId = std::stoull(std::get<std::string>(int_data.options[1].value));
                     roll.emote = Emote(std::get<std::string>(int_data.options[2].value));
                     roll.rollId = std::get<dpp::snowflake>(int_data.options[0].value);
-                    rolls.push_back(roll);
                 } catch (std::exception &e) {
                     std::string what = e.what();
                     std::cout << what;
                     return;
                 }
-                auto strID = roll.emote.getStringId();
+
+                for (auto &iRoll: rolls) {
+                    if (iRoll.messageId == roll.messageId && iRoll.emote == roll.emote) {
+                        interaction.reply(dpp::ir_channel_message_with_source, dpp::message()
+                                .set_type(dpp::mt_reply)
+                                .set_flags(dpp::m_ephemeral)
+                                .set_content("reaction roll has already been bound"));
+                        return;
+                    }
+                }
+
+                rolls.push_back(roll);
 
                 app->bot->message_add_reaction(roll.messageId, interaction.command.channel_id,
-                                               strID,[](const dpp::confirmation_callback_t &event){
-                    if (event.is_error()) {
-                        auto err = event.get_error();
-                        std::cout<<err.message;
-                    }
-                });
+                                               roll.emote.getStringId());
 
                 auto &doc = app->settings->getDocument();
                 auto &rollSettings = doc["roll_settings"];
@@ -133,22 +138,31 @@ namespace Bot {
                 auto &int_data = cmd_data.options[0].options[0];
                 dpp::snowflake messageID = std::stoull(std::get<std::string>(int_data.options[0].value));
                 Emote emote(std::get<std::string>(int_data.options[1].value));
-                std::remove_if(rolls.begin(), rolls.end(), [&, messageID, emote](const Roll &roll) {
-                    if (messageID == roll.messageId && emote == roll.emote) {
+
+                for (auto roll = rolls.begin(); roll != rolls.end();) {
+                    if (roll->messageId == messageID && roll->emote == emote) {
+                        roll = rolls.erase(roll);
                         app->bot->message_delete_reaction_emoji(messageID, interaction.command.channel_id,
                                                                 emote.getStringId());
-                        return true;
+                    } else {
+                        roll++;
                     }
-                    return false;
-                });
+                }
 
                 auto &doc = app->settings->getDocument();
                 auto &rollSettings = doc["roll_settings"];
-                std::remove_if(rollSettings.Begin(), rollSettings.End(), [messageID, emote](rapidjson::Value &value) {
-                    if (value["msgID"].GetUint64() != messageID) return false;
-                    Emote jEmote(value["emoteID"].GetUint64(), value["emoteName"].GetString());
-                    return jEmote == emote;
-                });
+
+                for (auto value = rollSettings.Begin(); value != rollSettings.End();) {
+                    auto &dvalue = *value;
+                    if (dvalue["msgID"].GetUint64() == messageID) {
+                        Emote jEmote(dvalue["emoteID"].GetUint64(), dvalue["emoteName"].GetString());
+                        if (jEmote ==emote) {
+                            value = rollSettings.Erase(value);
+                            continue;
+                        }
+                    }
+                    value++;
+                }
 
                 app->settings->save();
 
