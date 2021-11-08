@@ -37,7 +37,7 @@ namespace Bot {
 
         bot->on_ready([this, &game](const dpp::ready_t &event) {
             this->registerSettings(*bot,*settings);
-            //game.addCommands(bot,settings,this);
+            game.addCommands(*bot,*settings,this);
             std::cout << "bot ready" << "\n";
         });
 
