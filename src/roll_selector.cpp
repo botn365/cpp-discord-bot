@@ -25,7 +25,7 @@ namespace Bot {
         if (id == 0) {
             return name;
         } else {
-            return std::to_string(id);
+            return name+":"+std::to_string(id);
         }
     }
 
@@ -85,9 +85,15 @@ namespace Bot {
                     std::cout << what;
                     return;
                 }
+                auto strID = roll.emote.getStringId();
 
-//                app->bot->message_add_reaction(roll.messageId, interaction.command.channel_id,
-//                                               roll.emote.getStringId());
+                app->bot->message_add_reaction(roll.messageId, interaction.command.channel_id,
+                                               strID,[](const dpp::confirmation_callback_t &event){
+                    if (event.is_error()) {
+                        auto err = event.get_error();
+                        std::cout<<err.message;
+                    }
+                });
 
                 auto &doc = app->settings->getDocument();
                 auto &rollSettings = doc["roll_settings"];
