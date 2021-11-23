@@ -16,7 +16,32 @@ namespace Bot {
         if (doc.HasParseError()) {
             throw std::runtime_error("failed to parse json");
         }
+        bool shouldSave = false;
+        if (!doc.HasMember("bot_token")) {
+            rapidjson::Value token;
+            token.SetString("");
+            doc.AddMember("bot_token",token,doc.GetAllocator());
+            shouldSave = true;
+            std::cout<<"NO TOKEN FOUND IN SETTINGS!!!\n";
+        }
+        if (!doc.HasMember("server_id")) {
+            rapidjson::Value serverId;
+            serverId.SetInt64(0);
+            doc.AddMember("server_id",serverId,doc.GetAllocator());
+            shouldSave = true;
+            std::cout<<"NO SERVER ID FOUND!!! \n";
+        }
+        if (!doc.HasMember("unicode_translation")) {
+            rapidjson::Value unicode;
+            unicode.SetString("unicodeToNumber.json");
+            doc.AddMember("unicode_translation",unicode,doc.GetAllocator());
+            shouldSave = true;
+            std::cout<<"No location for unicode translation file found in settings. Putting it in default location. ~/unicodeToNumber.json\n";
+        }
         saveLocation = std::move(file);
+        if (shouldSave) {
+            save();
+        }
     }
 
     void Settings::save() {
@@ -32,11 +57,7 @@ namespace Bot {
     }
 
     const char *Settings::getToken() {
-        try {
-            return doc["bot_token"].GetString();
-        } catch (std::exception &e) {
-            throw std::runtime_error("token not found");
-        }
+        return doc["bot_token"].GetString();
     }
 
     const char *Settings::getCountDBLocation() {

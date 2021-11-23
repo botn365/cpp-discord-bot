@@ -23,19 +23,13 @@ namespace Bot {
             SAME_USER
         };
 
-        CountingGame(std::string dataBase, int id = 0);
+        CountingGame(App *app, int id = 0);
 
         ~CountingGame();
 
-        void initDataBase(int id);
+        void count(dpp::cluster &bot, const dpp::message_create_t &message);
 
-        static int populateHashSet(void *countGamePtr, int entries, char** value, char** colName);
-
-        static int setServerValues(void *countGamePtr, int entries, char** value, char** colName);
-
-        void count(dpp::cluster &bot,const dpp::message_create_t &message);
-
-        void reply(const Type type, dpp::cluster &bot,const dpp::message_create_t &message, double value);
+        void reply(const Type type, dpp::cluster &bot, const dpp::message_create_t &message, double value);
 
         dpp::snowflake getCountChannel() const;
 
@@ -53,11 +47,22 @@ namespace Bot {
 
         bool onInteraction(const dpp::interaction_create_t &interaction, App *app);
 
-        void addCommands(dpp::cluster &bot, Settings &settings,App *app);
+        void addCommands(dpp::cluster &bot, Settings &settings, App *app);
+
+        void addSettings(dpp::slashcommand &baseCommand, App *app);
 
 
     private:
-        Type addCountToPlayer(Player &player,bool correct);
+        void initDataBase(int id);
+
+        static int populateHashSet(void *countGamePtr, int entries, char **value, char **colName);
+
+        static int setServerValues(void *countGamePtr, int entries, char **value, char **colName);
+
+        std::string initSettings(App *app);
+
+        Type addCountToPlayer(Player &player, bool correct);
+
         std::unordered_map<dpp::snowflake, Player> players;
         int id;
         dpp::snowflake channelID;

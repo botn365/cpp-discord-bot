@@ -25,15 +25,15 @@ namespace Bot {
             if (doc.HasParseError()) {
                 std::stringstream ss;
                 ss << "failed to parse json ParseErrorCode = " << doc.GetParseError();
+                std::cout<<"tryed to parse unicodetranslation from "<<translationFile<<"\nfile not found or does not exists\n";
                 throw std::runtime_error(ss.str());
             }
-            try {
-                auto &codes = doc["codes"];
-                for (auto &code: codes.GetArray()) {
-                    Str::addUnicodeNumber(code["unicode"].GetInt(),code["value"].GetInt());
-                }
-            } catch (std::exception &e){
-                throw std::runtime_error("failed to get values from json");
+            if (!doc.HasMember("codes")) {
+                throw std::runtime_error("invalid unicode translation file");
+            }
+            auto &codes = doc["codes"];
+            for (auto &code: codes.GetArray()) {
+                Str::addUnicodeNumber(code["unicode"].GetInt(),code["value"].GetInt());
             }
         }
 
@@ -177,7 +177,12 @@ namespace Bot {
         static std::string iFileToString(std::string file) {
             std::ifstream inputStream(file);
             if (!inputStream.is_open()) {
-                throw std::runtime_error(file+" not found");
+                std::ofstream genFile(file);
+                std::cout<<"file "<<file<<" not found\n generating file "<<file<<"\n";
+                if (genFile.is_open()) {
+                    genFile.close();
+                }
+                return "{}";
             }
             std::stringstream ss;
             ss << inputStream.rdbuf();

@@ -13,8 +13,10 @@
 
 
 namespace Bot {
-    Bot::CountingGame::CountingGame(std::string dataBase, int id) :
+    Bot::CountingGame::CountingGame(App *app, int id) :
             channelID{0}, currentCount{0}, lastPlayer{nullptr}, id{id} {
+        auto dataBase = initSettings(app);
+
         int error = sqlite3_open(dataBase.c_str(), &db);
         if (error) {
             std::cout << "failed to open dataBase" << sqlite3_errmsg(db) << "\n";
@@ -26,6 +28,26 @@ namespace Bot {
 
     CountingGame::~CountingGame() {
         sqlite3_close(db);
+    }
+
+    std::string CountingGame::initSettings(App *app) {
+        auto &doc = app->settings->getDocument();
+        if (!doc.HasMember("counting")) {
+            rapidjson::Value counting;
+            counting.SetObject();
+            doc.AddMember("counting", counting, doc.GetAllocator());
+        }
+        auto &count = doc["counting"];
+
+        if (!count.HasMember("count_game_db_location")) {
+            rapidjson::Value db;
+            db.SetString("CountData.db");
+            count.AddMember("count_game_db_location", db, doc.GetAllocator());
+            std::cout
+                    << "no value for counting DB location found in settings. Putting it in default location. ~/CountData.db\n";
+            app->settings->save();
+        }
+        return count["count_game_db_location"].GetString();
     }
 
     void CountingGame::initDataBase(int id) {
@@ -347,7 +369,32 @@ namespace Bot {
         return false;
     }
 
-    void CountingGame::addCommands(dpp::cluster &bot, Settings &settings,App *app) {
+    void CountingGame::addSettings(dpp::slashcommand &baseCommand, App *app) {
+        dpp::command_option command(dpp::co_sub_command_group, "counting", "counting settings");
+        {
+            dpp::command_option setChannel(dpp::co_sub_command, "set_counting_channel",
+                                           "set the channel in wich the counting happens");
+            setChannel.add_option(
+                    dpp::command_option(
+                            dpp::co_channel, "channel", "channel where counting happens", true
+                    ));
+            app->registerSetting(baseCommand,command,[this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+
+                auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(
+                                                  "<#" + std::to_string(value) + "> has been set as counting channel")
+                );
+                setCountChannel(value);
+            },0);
+        }
+    }
+
+    void CountingGame::addCommands(dpp::cluster &bot, Settings &settings, App *app) {
         {
             dpp::slashcommand setChannel;
             std::string nameSetChannel = "set_counting_channel";
@@ -365,6 +412,7 @@ namespace Bot {
                     ));
             app->registerCommand(bot, settings, setChannel, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+
                 auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
                 interaction.reply(dpp::ir_channel_message_with_source,
                                   dpp::message()
@@ -476,7 +524,6 @@ namespace Bot {
                 } else {
                     user_id = interaction.command.usr.id;
                 }
-                //350016920264638485
                 auto userPair = players.find(user_id);
                 if (userPair != players.end()) {
                     auto &user = userPair->second;

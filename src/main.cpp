@@ -3,6 +3,10 @@
 
 int main() {
     Bot::App app;
-    app.run();
+    try {
+        app.run();
+    } catch (std::exception &e) {
+        std::cout<<"fatal exception what() "<<e.what()<<"\n";
+    }
     return 0;
 }

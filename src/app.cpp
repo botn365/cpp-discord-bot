@@ -24,7 +24,7 @@ namespace Bot {
         intents += dpp::i_guilds;
 
         bot = std::make_unique<dpp::cluster>(settings->getToken(), intents);
-        Bot::CountingGame game(settings->getCountDBLocation());
+        Bot::CountingGame game(this);
 
         bot->on_message_create([this,&game](const dpp::message_create_t &message) {
             if (message.msg->author->id == bot->me.id) return;
@@ -53,6 +53,10 @@ namespace Bot {
         bot->start(false);
     }
 
+    void App::registerSettingsModuals(dpp::slashcommand &baseCommand) {
+        rollSelector->addSettings(baseCommand,this);
+    }
+
     void App::registerSettings(dpp::cluster &bot, Settings &settings) {
         dpp::slashcommand baseCommand;
         std::string name = "settings";
@@ -64,7 +68,8 @@ namespace Bot {
         for (auto &com: settings.getCommandPermissions(name)) {
             baseCommand.add_permission(com);
         }
-        rollSelector->addSettings(baseCommand,this);
+
+        registerSettingsModuals(baseCommand);
 
         registerCommand(bot,settings,baseCommand,[this](const dpp::interaction_create_t &interaction){
             dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
@@ -100,6 +105,7 @@ namespace Bot {
     void App::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
                                        std::function<void(
                                                const dpp::interaction_create_t &interaction)> interactionCallBack) {
+        //TODO batch it up later
         bot.guild_command_create(command, settings.getServerId(), [&bot, command, this, interactionCallBack](
                 const dpp::confirmation_callback_t &callback) {
             if (callback.is_error()) {
