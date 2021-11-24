@@ -27,9 +27,9 @@ namespace Bot {
 
         ~CountingGame();
 
-        void count(dpp::cluster &bot, const dpp::message_create_t &message);
+        void count(App *app, const dpp::message_create_t &message);
 
-        void reply(const Type type, dpp::cluster &bot, const dpp::message_create_t &message, double value);
+        void reply(const Type type, App *app, const dpp::message_create_t &message, double value);
 
         dpp::snowflake getCountChannel() const;
 
@@ -45,8 +45,6 @@ namespace Bot {
 
         void saveGame();
 
-        bool onInteraction(const dpp::interaction_create_t &interaction, App *app);
-
         void addCommands(dpp::cluster &bot, Settings &settings, App *app);
 
         void addSettings(dpp::slashcommand &baseCommand, App *app);
@@ -59,13 +57,16 @@ namespace Bot {
 
         static int setServerValues(void *countGamePtr, int entries, char **value, char **colName);
 
+        void addExtraTables();
+
         std::string initSettings(App *app);
 
-        Type addCountToPlayer(Player &player, bool correct);
+        Type addCountToPlayer(App *bot,Player &player, bool correct);
 
         std::unordered_map<dpp::snowflake, Player> players;
         int id;
         dpp::snowflake channelID;
+        dpp::snowflake failRollID;
         uint64_t currentCount;
         Player *lastPlayer;
         uint64_t highestCount = 0;

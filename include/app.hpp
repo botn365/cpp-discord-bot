@@ -6,11 +6,18 @@
 
 #include "settings.hpp"
 #include "roll_selector.hpp"
+#include "counting_game.hpp"
 
 #include <dpp/dpp.h>
 
 namespace Bot {
     class App {
+    private:
+        using call_back = std::function<void(const dpp::interaction_create_t &)>;
+        struct Interaction {
+            dpp::slashcommand command;
+            call_back callBack;
+        };
     public:
         void run();
 
@@ -23,16 +30,20 @@ namespace Bot {
 
         void registerSettingsModuals(dpp::slashcommand &baseCommand);
 
-        std::unordered_map<uint64_t, dpp::slashcommand> commands;
-        std::unordered_map<uint64_t, std::function<void(const dpp::interaction_create_t &interaction)>> interactions;
-        std::unordered_map<std::string, std::function<void(
-                const dpp::interaction_create_t &interaction)>> settingCallBacks;
+        std::unordered_map<uint64_t, Interaction> commands;
+        std::unordered_map<std::string, call_back> settingCallBacks;
         std::unique_ptr<dpp::cluster> bot;
         std::unique_ptr<Settings> settings;
+        std::unique_ptr<CountingGame> countingGame;
 
     private:
 
         void registerSettings(dpp::cluster &bot, Bot::Settings &settings);
+
+        void batchUploadCommands();
+
+        std::vector<dpp::slashcommand> tempCommandVector;
+        std::vector<call_back> tempCallBackVector;
 
         std::unique_ptr<RollSelector> rollSelector;
     };

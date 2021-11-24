@@ -50,7 +50,7 @@ namespace Bot {
         auto &doc = settings.getDocument();
         if (doc.HasMember("roll_settings")) {
             for (auto &value: doc["roll_settings"].GetArray()) {
-                rolls.emplace_back(Roll{value["msgID"].GetUint64(), value["rollID"].GetUint64(),
+                rolls.emplace_back(Roll{value["msgID"].GetUint64(), value["failRollID"].GetUint64(),
                                         Emote(value["emoteID"].GetUint64(), value["emoteName"].GetString())});
             }
         } else {
@@ -113,7 +113,7 @@ namespace Bot {
                 rapidjson::Value emoteName;
                 emoteName.SetString(roll.emote.name.c_str(), doc.GetAllocator());
                 newRoll.AddMember("msgID", msgID, doc.GetAllocator());
-                newRoll.AddMember("rollID", rollID, doc.GetAllocator());
+                newRoll.AddMember("failRollID", rollID, doc.GetAllocator());
                 newRoll.AddMember("emoteID", emoteID, doc.GetAllocator());
                 newRoll.AddMember("emoteName", emoteName, doc.GetAllocator());
                 rollSettings.PushBack(newRoll, doc.GetAllocator());

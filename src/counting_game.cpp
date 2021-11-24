@@ -89,6 +89,7 @@ namespace Bot {
             if (ec != SQLITE_OK) {
                 std::cout << "crated player table but faild to create server database could be mallformed" << "\n"
                           << msgError << "\n";
+                sqlite3_free(msgError);
                 throw std::runtime_error("error on database init");
             } else {
                 std::stringstream ss;
@@ -100,6 +101,17 @@ namespace Bot {
                     throw std::runtime_error("failed to insert game data in to DB");
                 }
             }
+        }
+        addExtraTables();
+    }
+
+    //sqlite has no way to check if a table exists
+    //so im just going to always run these commnads and just ignore the error
+    void CountingGame::addExtraTables() {
+        char *err;
+        int ec = sqlite3_exec(db, "ALTER TABLE GAME ADD FAIL_ROLL_ID", 0, 0, &err);
+        if (SQLITE_OK != ec) {
+            sqlite3_free(err);
         }
     }
 
@@ -139,6 +151,7 @@ namespace Bot {
         uint64_t channelId = 0;
         uint64_t currentCount = 0;
         uint64_t lastPlayerId = 0;
+        uint64_t rollID = 0;
 
         for (int i = 0; i < entries; i++) {
             if (strcmp(colName[i], "CHANNEL_ID") == 0) {
@@ -147,15 +160,18 @@ namespace Bot {
                 currentCount = std::stoll(value[i]);
             } else if (strcmp(colName[i], "LAST_PLAYER") == 0) {
                 lastPlayerId = std::stoll(value[i]);
+            } else if (strcmp(colName[i], "FAIL_ROLL_ID") == 0) {
+                rollID = std::stoll(value[i]);
             }
         }
         CountingGame *game = (CountingGame *) countGamePtr;
         game->currentCount = currentCount;
-        auto pair = game->players.find(channelId);
+        auto pair = game->players.find(lastPlayerId);
         if (pair != game->players.end()) {
             game->lastPlayer = &pair->second;
         }
         game->channelID = channelId;
+        game->failRollID = rollID;
         return 0;
     }
 
@@ -182,6 +198,7 @@ namespace Bot {
         ss << "UPDATE GAME" << "\n";
         ss << "SET CHANNEL_ID = " << channelID;
         ss << " , CURRENT_COUNT = " << currentCount;
+        ss << " , FAIL_ROLL_ID = " << failRollID;
         if (lastPlayer != nullptr) {
             ss << " , LAST_PLAYER = " << lastPlayer->userId;
         } else {
@@ -212,17 +229,17 @@ namespace Bot {
     }
 
     //calculate and check a message and update game data
-    void Bot::CountingGame::count(dpp::cluster &bot, const dpp::message_create_t &message) {
+    void Bot::CountingGame::count(App *app, const dpp::message_create_t &message) {
         if (message.msg->channel_id == channelID) {
             if (!shouldCount(message.msg->content)) {
                 return;
             }
             const dpp::snowflake author = message.msg->author->id;
             if (currentCount != resetCount && lastPlayer != nullptr && author == lastPlayer->userId) {
-                reply(CountingGame::Type::SAME_USER, bot, message, 0);
+                reply(CountingGame::Type::SAME_USER, app, message, 0);
                 auto keySet = players.find(author);
                 if (keySet != players.end()) {
-                    addCountToPlayer(keySet->second, false);
+                    addCountToPlayer(app, keySet->second, false);
                     saveGame();
                 }
                 return;
@@ -238,12 +255,12 @@ namespace Bot {
                 highestCount = currentCount;
             }
             if (keySet != players.end()) {
-                reply(addCountToPlayer(keySet->second, isCorrect), bot, message, value);
+                reply(addCountToPlayer(app, keySet->second, isCorrect), app, message, value);
                 saveGame();
                 return;
             } else {
                 auto player = addPlayer(author);
-                reply(addCountToPlayer(player, isCorrect), bot, message, value);
+                reply(addCountToPlayer(app, player, isCorrect), app, message, value);
                 saveGame();
                 return;
             }
@@ -251,19 +268,19 @@ namespace Bot {
     }
 
     //reply with message depending on type
-    void CountingGame::reply(const Type type, dpp::cluster &bot, const dpp::message_create_t &message, double value) {
+    void CountingGame::reply(const Type type, App *app, const dpp::message_create_t &message, double value) {
         int64_t cast = value;
         switch (type) {
             case Bot::CountingGame::Type::CORRECT:
                 if (currentCount == highestCount) {
-                    bot.message_add_reaction(message.msg->id, message.msg->channel_id, "☑");
+                    app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "☑");
                 } else {
-                    bot.message_add_reaction(message.msg->id, message.msg->channel_id, "✅");
+                    app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "✅");
                 }
                 break;
             case Bot::CountingGame::Type::INCORRECT:
-                bot.message_add_reaction(message.msg->id, message.msg->channel_id, "❌");
-                bot.message_create(dpp::message(
+                app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "❌");
+                app->bot->message_create(dpp::message(
                         message.msg->channel_id,
                         "<@" + std::to_string(message.msg->author->id) +
                         "> Cant count. Gave Value " + std::to_string(cast) + ". Count reset to 1"
@@ -271,8 +288,8 @@ namespace Bot {
                 currentCount = resetCount;
                 break;
             case Bot::CountingGame::Type::SAME_USER:
-                bot.message_add_reaction(message.msg->id, message.msg->channel_id, "❌");
-                bot.message_create(dpp::message(
+                app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "❌");
+                app->bot->message_create(dpp::message(
                         message.msg->channel_id,
                         "<@" + std::to_string(message.msg->author->id) +
                         "> You already counted. Count reset to 1"
@@ -283,7 +300,7 @@ namespace Bot {
     }
 
     //handle player data
-    CountingGame::Type CountingGame::addCountToPlayer(Player &player, bool correct) {
+    CountingGame::Type CountingGame::addCountToPlayer(App *app, Player &player, bool correct) {
         if (correct) {
             player.incrementCorrectCount();
             player.checkAndSetHighestCount(currentCount);
@@ -293,6 +310,9 @@ namespace Bot {
         } else {
             player.incrementFailedCount();
             savePlayer(player);
+            if (failRollID != 0) {
+                app->bot->guild_member_add_role(app->settings->getServerId(), player.userId, failRollID);
+            }
             return INCORRECT;
         }
     }
@@ -357,18 +377,6 @@ namespace Bot {
         return returnList;
     }
 
-    bool CountingGame::onInteraction(const dpp::interaction_create_t &interaction, App *app) {
-        if (interaction.command.type == dpp::it_application_command) {
-            dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-            auto result = app->interactions.find(cmd_data.id);
-            if (result != app->interactions.end()) {
-                result->second(interaction);
-                return true;
-            }
-        }
-        return false;
-    }
-
     void CountingGame::addSettings(dpp::slashcommand &baseCommand, App *app) {
         dpp::command_option command(dpp::co_sub_command_group, "counting", "counting settings");
         {
@@ -378,10 +386,11 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_channel, "channel", "channel where counting happens", true
                     ));
-            app->registerSetting(baseCommand,command,[this](const dpp::interaction_create_t &interaction) {
+            command.add_option(setChannel);
+            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
 
-                auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
+                auto value = std::get<dpp::snowflake>(cmd_data.options[0].options[0].options[0].value);
                 interaction.reply(dpp::ir_channel_message_with_source,
                                   dpp::message()
                                           .set_type(dpp::mt_reply)
@@ -390,41 +399,42 @@ namespace Bot {
                                                   "<#" + std::to_string(value) + "> has been set as counting channel")
                 );
                 setCountChannel(value);
-            },0);
+            }, 0);
         }
+
+        {
+            dpp::command_option setFailRoll(dpp::co_sub_command, "set_fail_roll",
+                                            "set wich roll it should give the player if they count wrong");
+            setFailRoll.add_option(
+                    dpp::command_option(
+                            dpp::command_option(dpp::co_role, "fail_roll", "leave option out to not give roll")
+                    ));
+            command.add_option(setFailRoll);
+            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+                auto &data = cmd_data.options[0].options[0];
+                std::stringstream ss;
+                if (!data.options.empty()) {
+                    auto value = std::get<dpp::snowflake>(data.options[0].value);
+                    failRollID = value;
+                    ss<<"Fail Roll has been set to <@&"<<failRollID<<">";
+                } else {
+                    failRollID = 0;
+                    ss<<"Fail Roll has been reset and no roll will be given on fail";
+                }
+                saveGame();
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                  .set_type(dpp::mt_reply)
+                                  .set_flags(dpp::m_ephemeral)
+                                  .set_content(ss.str()));
+            }, 1);
+        }
+
+        baseCommand.add_option(command);
     }
 
     void CountingGame::addCommands(dpp::cluster &bot, Settings &settings, App *app) {
-        {
-            dpp::slashcommand setChannel;
-            std::string nameSetChannel = "set_counting_channel";
-            setChannel.set_name(nameSetChannel);
-            setChannel.set_description("set the channel in wich the counting happens");
-            setChannel.set_type(dpp::ctxm_chat_input);
-            setChannel.set_application_id(bot.me.id);
-            setChannel.disable_default_permissions();
-            for (auto &command: settings.getCommandPermissions(nameSetChannel)) {
-                setChannel.add_permission(command);
-            }
-            setChannel.add_option(
-                    dpp::command_option(
-                            dpp::co_channel, "channel", "channel where counting happens", true
-                    ));
-            app->registerCommand(bot, settings, setChannel, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-
-                auto value = std::get<dpp::snowflake>(cmd_data.options[0].value);
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(
-                                                  "<#" + std::to_string(value) + "> has been set as counting channel")
-                );
-                setCountChannel(value);
-            });
-        }
-
         {
             dpp::slashcommand testNumber;
             std::string nameTestNumber = "test_number";

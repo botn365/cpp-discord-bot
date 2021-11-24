@@ -16,7 +16,7 @@ if(DOWNLOAD_LIBS)
     FetchContent_Declare(
             dpp_dw
             GIT_REPOSITORY git@github.com:brainboxdotcc/DPP.git
-            GIT_TAG  origin/master
+            GIT_TAG  fdb61e70b34addd5b522195e7959679385fb1651
     )
     FetchContent_GetProperties(dpp_dw)
     if (NOT dpp_dw_POPULATED)
