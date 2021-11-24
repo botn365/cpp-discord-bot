@@ -6,13 +6,14 @@
 
 Bot::Player::Player(dpp::snowflake userId) : userId{userId} {}
 
-Bot::Player::Player(dpp::snowflake userId, uint64_t totalCorrect, uint64_t totalFailed, uint64_t highestCount) :
+Bot::Player::Player(dpp::snowflake userId, uint64_t totalCorrect, uint64_t totalFailed, uint64_t highestCount, uint64_t saves) :
         Player(userId)
 {
     this->totalCorrect = totalCorrect;
     this->totalFailed = totalFailed;
     this->highestCount = highestCount;
     totalCount = totalCorrect + totalFailed;
+    this->saves = saves;
 }
 
 double Bot::Player::getSuccessRate() const {

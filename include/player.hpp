@@ -10,7 +10,7 @@ namespace Bot {
     public:
         Player(dpp::snowflake userId);
 
-        Player(dpp::snowflake userId,uint64_t totalCorrect, uint64_t totalFailed, uint64_t highestCount);
+        Player(dpp::snowflake userId,uint64_t totalCorrect, uint64_t totalFailed, uint64_t highestCount, uint64_t saves);
 
         void incrementFailedCount();
 
@@ -26,6 +26,10 @@ namespace Bot {
 
         uint64_t getHighestCount() const {return highestCount;}
 
+        uint64_t getSaves() const {return saves;}
+
+        void setSaves(uint64_t saves) {this->saves=saves;}
+
         const dpp::snowflake userId;
 
         void checkAndSetHighestCount(double value);
@@ -34,6 +38,7 @@ namespace Bot {
         uint64_t totalFailed = 0;
         uint64_t totalCount = 0;
         uint64_t highestCount = 0;
+        uint64_t saves = 0;
     };
 }
 

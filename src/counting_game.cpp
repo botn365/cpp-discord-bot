@@ -109,7 +109,11 @@ namespace Bot {
     //so im just going to always run these commnads and just ignore the error
     void CountingGame::addExtraTables() {
         char *err;
-        int ec = sqlite3_exec(db, "ALTER TABLE GAME ADD FAIL_ROLL_ID", 0, 0, &err);
+        int ec = sqlite3_exec(db, "ALTER TABLE GAME ADD FAIL_ROLL_ID INT;", 0, 0, &err);
+        if (SQLITE_OK != ec) {
+            sqlite3_free(err);
+        }
+        ec = sqlite3_exec(db, "ALTER TABLE PLAYER ADD SAVES INT;", 0, 0, &err);
         if (SQLITE_OK != ec) {
             sqlite3_free(err);
         }
@@ -122,21 +126,25 @@ namespace Bot {
         uint64_t sucCount = 0;
         uint64_t failCount = 0;
         uint64_t highestCount = 0;
+        uint32_t saves = 0;
         for (int i = 0; i < argc; i++) {
+            if (value[i] == NULL) continue;
             if (strcmp(colName[i], "SNOWFLAKE") == 0) {
-                snowflake = std::stoll(value[i]);
+                snowflake = std::stoull(value[i]);
             } else if (strcmp(colName[i], "TOTAL_CORRECT") == 0) {
-                sucCount = std::stoll(value[i]);
+                sucCount = std::stoull(value[i]);
             } else if (strcmp(colName[i], "TOTAL_FAILED") == 0) {
-                failCount = std::stoll(value[i]);
+                failCount = std::stoull(value[i]);
             } else if (strcmp(colName[i], "HIGHEST_COUNT") == 0) {
-                highestCount = std::stoll(value[i]);
+                highestCount = std::stoull(value[i]);
+            } else if (strcmp(colName[i], "SAVES") == 0) {
+                saves = std::stoul(value[i]);
             }
         }
         if (snowflake != 0) {
             game->players.insert(std::pair<dpp::snowflake, Player>(snowflake,
                                                                    Player(snowflake, sucCount, failCount,
-                                                                          highestCount)));
+                                                                          highestCount, saves)));
             if (game->highestCount < highestCount) {
                 game->highestCount = highestCount;
             }
@@ -154,6 +162,7 @@ namespace Bot {
         uint64_t rollID = 0;
 
         for (int i = 0; i < entries; i++) {
+            if (value[i] == NULL) continue;
             if (strcmp(colName[i], "CHANNEL_ID") == 0) {
                 channelId = std::stoll(value[i]);
             } else if (strcmp(colName[i], "CURRENT_COUNT") == 0) {
@@ -182,6 +191,7 @@ namespace Bot {
         ss << "SET TOTAL_CORRECT = " << player.getCorectCount();
         ss << " , TOTAL_FAILED = " << player.getFailedCount();
         ss << " , HIGHEST_COUNT = " << player.getHighestCount() << "\n";
+        ss << " , SAVES = " << player.getSaves() << "\n";
         ss << "WHERE SNOWFLAKE = " << player.userId << ";";
 
         char *errmsg;
@@ -236,6 +246,12 @@ namespace Bot {
             }
             const dpp::snowflake author = message.msg->author->id;
             if (currentCount != resetCount && lastPlayer != nullptr && author == lastPlayer->userId) {
+                if (lastPlayer->getSaves() > 0) {
+                    lastPlayer->setSaves(lastPlayer->getSaves() - 1);
+                    reply(SAVED, app, message, lastPlayer->getSaves());
+                    savePlayer(*lastPlayer);
+                    return;
+                }
                 reply(CountingGame::Type::SAME_USER, app, message, 0);
                 auto keySet = players.find(author);
                 if (keySet != players.end()) {
@@ -296,6 +312,14 @@ namespace Bot {
                 ));
                 currentCount = 0;
                 break;
+            case Bot::CountingGame::Type::SAVED:
+                std::stringstream ss;
+                app->bot->message_create(dpp::message(
+                        message.msg->channel_id,
+                        "<@" + std::to_string(message.msg->author->id) + "> almost lost but got saved. Saves left " +
+                        std::to_string((uint64_t)value)
+                ));
+                break;
         }
     }
 
@@ -308,6 +332,11 @@ namespace Bot {
             savePlayer(player);
             return CORRECT;
         } else {
+            if (player.getSaves() > 0) {
+                player.setSaves(player.getSaves() - 1);
+                savePlayer(player);
+                return SAVED;
+            }
             player.incrementFailedCount();
             savePlayer(player);
             if (failRollID != 0) {
@@ -417,18 +446,57 @@ namespace Bot {
                 if (!data.options.empty()) {
                     auto value = std::get<dpp::snowflake>(data.options[0].value);
                     failRollID = value;
-                    ss<<"Fail Roll has been set to <@&"<<failRollID<<">";
+                    ss << "Fail Roll has been set to <@&" << failRollID << ">";
                 } else {
                     failRollID = 0;
-                    ss<<"Fail Roll has been reset and no roll will be given on fail";
+                    ss << "Fail Roll has been reset and no roll will be given on fail";
                 }
                 saveGame();
                 interaction.reply(dpp::ir_channel_message_with_source,
                                   dpp::message()
-                                  .set_type(dpp::mt_reply)
-                                  .set_flags(dpp::m_ephemeral)
-                                  .set_content(ss.str()));
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(ss.str()));
             }, 1);
+        }
+
+        {
+            dpp::command_option setSaves(dpp::co_sub_command, "set_saves", "set the save count of user");
+            dpp::command_option player(dpp::co_user, "user", "wich user the saves is set");
+            dpp::command_option amount(dpp::co_integer, "amount", "to wich amount the saves should be set", true);
+            setSaves.add_option(amount);
+            setSaves.add_option(player);
+            command.add_option(setSaves);
+            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+                auto &data = cmd_data.options[0].options[0];
+                dpp::snowflake userID;
+                uint64_t amount;
+                if (data.options.size()==1) {
+                    amount = std::get<int64_t>(data.options[0].value);
+                    userID = interaction.command.usr.id;
+                } else {
+                    if (data.options[0].name == "amount") {
+                        amount = std::get<int64_t>(data.options[0].value);
+                        userID = std::get<dpp::snowflake>(data.options[1].value);
+                    } else {
+                        userID = std::get<dpp::snowflake>(data.options[0].value);
+                        amount = std::get<int64_t>(data.options[1].value);
+                    }
+                }
+                if (amount < 0) amount = 0;
+                std::stringstream ss;
+                auto player = players.find(userID);
+                if (player != players.end()) {
+                    player->second.setSaves(amount);
+                    ss<<"User <@"<<userID<<"> Saves has been set to "<<amount;
+                } else {
+                    ss<<"User <@"<<userID<<"> Was not found in the player list";
+                }
+                interaction.reply(dpp::ir_channel_message_with_source,dpp::message()
+                .set_type(dpp::mt_reply).set_flags(dpp::m_ephemeral)
+                .set_content(ss.str()));
+            }, 2);
         }
 
         baseCommand.add_option(command);

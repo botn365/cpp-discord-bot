@@ -20,7 +20,8 @@ namespace Bot {
             INVALID,
             CORRECT,
             INCORRECT,
-            SAME_USER
+            SAME_USER,
+            SAVED
         };
 
         CountingGame(App *app, int id = 0);
@@ -48,7 +49,6 @@ namespace Bot {
         void addCommands(dpp::cluster &bot, Settings &settings, App *app);
 
         void addSettings(dpp::slashcommand &baseCommand, App *app);
-
 
     private:
         void initDataBase(int id);
