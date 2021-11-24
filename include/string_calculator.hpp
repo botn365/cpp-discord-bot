@@ -41,6 +41,8 @@ namespace Bot {
 
     class StringCalculator {
     public:
+        static void init(std::string numeTranslationFile);
+
         static std::list<std::unique_ptr<CountObj>> convertStringToRPNList(std::string_view &input);
 
         static double calculateFromRPNList(std::list<std::unique_ptr<CountObj>> &list);

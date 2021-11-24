@@ -4,12 +4,19 @@
 
 #include <cmath>
 #include "../include/string_calculator.hpp"
+#include "../include/load_operators.hpp"
 
 static std::unordered_map<char32_t, Bot::Operator> unicodeToOperator;
 static std::unordered_map<char32_t, int> unicodeToNumber;
 
 
 namespace Bot {
+
+    void StringCalculator::init(std::string numeTranslationFile) {
+        Bot::LoadOperators::loadNumbers(numeTranslationFile);
+        Bot::LoadOperators::loadOperators();
+    }
+
     std::list<std::unique_ptr<Bot::CountObj>> Bot::StringCalculator::convertStringToRPNList(std::string_view &input) {
         std::list<std::unique_ptr<CountObj>> list;
         list.push_back(std::make_unique<Number>(0));

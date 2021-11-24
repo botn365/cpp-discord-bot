@@ -4,18 +4,12 @@
 
 #include "../include/app.hpp"
 #include "../include/counting_game.hpp"
-#include "../include/string_calculator.hpp"
-#include "../include/load_operators.hpp"
 
 namespace Bot {
-    using Str = Bot::StringCalculator;
 
     void App::run() {
         settings = std::make_unique<Settings>("settings.json");
         rollSelector = std::make_unique<RollSelector>(*settings);
-
-        Bot::LoadOperators::loadNumbers(settings->getUnicodeTranslationLocation());
-        Bot::LoadOperators::loadOperators();
 
         uint32_t intents = 0;
         intents += dpp::i_guild_integrations;

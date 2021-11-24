@@ -17,6 +17,8 @@ namespace Bot {
             channelID{0}, currentCount{0}, lastPlayer{nullptr}, id{id} {
         auto dataBase = initSettings(app);
 
+        StringCalculator::init(app->settings->getUnicodeTranslationLocation());
+
         int error = sqlite3_open(dataBase.c_str(), &db);
         if (error) {
             std::cout << "failed to open dataBase" << sqlite3_errmsg(db) << "\n";
