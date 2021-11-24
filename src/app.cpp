@@ -141,6 +141,8 @@ namespace Bot {
                                                throw std::runtime_error("failed to create commands");
                                            }
                                            std::cout<<"commands registert\n";
+                                           tempCommandVector.clear();
+                                           tempCallBackVector.clear();
                                        });
     }
 }
