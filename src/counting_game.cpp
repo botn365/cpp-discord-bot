@@ -229,7 +229,7 @@ namespace Bot {
     Player &CountingGame::addPlayer(dpp::snowflake id) {
         auto value = players.insert({id, Player{id}});
         std::stringstream ss;
-        ss << "INSERT INTO PLAYER VALUES (" << id << "," << 0 << "," << 0 << "," << 0 << ");";
+        ss << "INSERT INTO PLAYER VALUES (" << id << "," << 0 << "," << 0 << "," << 0 << ","<< 0 <<");";
 
         char *errmsg;
         int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
