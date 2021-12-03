@@ -273,12 +273,16 @@ namespace Bot {
                 highestCount = currentCount;
             }
             if (keySet != players.end()) {
-                reply(addCountToPlayer(app, keySet->second, isCorrect), app, message, value);
+                auto type = addCountToPlayer(app, keySet->second, isCorrect);
+                reply(type, app, message, value);
+                if (type == SAVED) currentCount--;
                 saveGame();
                 return;
             } else {
                 auto player = addPlayer(author);
-                reply(addCountToPlayer(app, player, isCorrect), app, message, value);
+                auto type = addCountToPlayer(app, player, isCorrect);
+                reply(type, app, message, value);
+                if (type == SAVED) currentCount--;
                 saveGame();
                 return;
             }
