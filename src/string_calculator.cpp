@@ -51,7 +51,7 @@ namespace Bot {
                     int bracket = getParanthese(unicode);
                     if (bracket > 0) {
                         if (numberWasLast) {
-                            insertOperatorInRPNList(list, index, multOp, bracketPriorety);
+                            insertOperatorInRPNList(list, index, multOp, bracketPriorety-10);
                             numberWasLast = false;
                         }
                         if (indexUp) {
