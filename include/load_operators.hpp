@@ -66,6 +66,15 @@ namespace Bot {
                 stack.push(d1 * d2);
                 return true;
             });
+            Str::addOperator('x', 2, [](std::stack<double> &stack) {
+                if (stack.size() < 2) return false;
+                double d1 = stack.top();
+                stack.pop();
+                double d2 = stack.top();
+                stack.pop();
+                stack.push(d1 * d2);
+                return true;
+            });
             Str::addOperator('/', 2, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 double d1 = stack.top();
