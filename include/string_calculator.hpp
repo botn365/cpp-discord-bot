@@ -29,13 +29,30 @@ namespace Bot {
 
     class Operator : public CountObj {
     public:
-        Operator(int priorety,char32_t unicode, std::function<bool(std::stack<double>&)> run) :
-                priorety{priorety},unicode{unicode} ,run{std::move(run)} {}
+        Operator(int priorety, char32_t unicode, std::function<bool(std::stack<double> &)> run,
+                 bool canHaveNumber = true, bool isReversed = false) :
+                priorety{priorety}, unicode{unicode}, run{std::move(run)} {
+            if (canHaveNumber) {
+                extraData |= 1;
+                if (isReversed) {
+                    extraData |= 2;
+                }
+            }
+        }
 
         bool isOperator() override { return true; }
 
-        std::function<bool(std::stack<double>&)> run;
+        bool canHaveNumber() {
+            return extraData &= 1;
+        }
+
+        bool isReversed() {
+            return extraData &= 2;
+        }
+
+        std::function<bool(std::stack<double> &)> run;
         char32_t unicode;
+        char extraData = 0;
         int priorety;
     };
 
@@ -47,15 +64,15 @@ namespace Bot {
 
         static double calculateFromRPNList(std::list<std::unique_ptr<CountObj>> &list);
 
-        static void addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double>&)> run);
+        static void addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run,bool canHaveNumber = true, bool isReversed = false);
 
         static void addUnicodeNumber(char32_t unicode, int value);
 
-        static bool getNumber(const char **input,double &number,const char * end);
+        static bool getNumber(const char **input, double &number, const char *end);
 
         static int getNumberFromUnicode(const char32_t &unicode);
 
-        static const char *getUnicode(const char *input,char32_t &unicode);
+        static const char *getUnicode(const char *input, char32_t &unicode);
 
         static Operator *getOperator(char32_t unicode);
 
@@ -68,7 +85,7 @@ namespace Bot {
                                             std::list<std::unique_ptr<CountObj>>::iterator &index,
                                             Operator *operand, int paranthesePriorety);
 
-        static char32_t converToUnicode(const char *input,int len);
+        static char32_t converToUnicode(const char *input, int len);
     };
 }
 

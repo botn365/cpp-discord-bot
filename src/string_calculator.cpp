@@ -42,8 +42,11 @@ namespace Bot {
                 if (!numberWasLast && unicode == '-') unicode = '~';
                 auto operatorLambda = getOperator(unicode);
                 if (operatorLambda != nullptr) {
+                    if (numberWasLast && !operatorLambda->canHaveNumber()) {
+                        insertOperatorInRPNList(list, index, multOp, bracketPriorety);
+                    }
                     insertOperatorInRPNList(list, index, operatorLambda, bracketPriorety);
-                    if (unicode == '!') {
+                    if (operatorLambda->isReversed()) {
                         index++;
                     } else {
                         numberWasLast = false;
@@ -53,7 +56,7 @@ namespace Bot {
                     int bracket = getParanthese(unicode);
                     if (bracket > 0) {
                         if (numberWasLast) {
-                            insertOperatorInRPNList(list, index, multOp, bracketPriorety-10);
+                            insertOperatorInRPNList(list, index, multOp, bracketPriorety - 10);
                             numberWasLast = false;
                         }
                         if (indexUp) {
@@ -96,8 +99,10 @@ namespace Bot {
 
 //add unicode operator pair to hashmap
     void
-    Bot::StringCalculator::addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run) {
-        unicodeToOperator.insert(std::pair<char32_t, Operator>(unicode, Operator(priorety, unicode, run)));
+    Bot::StringCalculator::addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run,
+                                       bool canHaveNumber, bool isReversed) {
+        unicodeToOperator.insert(
+                std::pair<char32_t, Operator>(unicode, Operator(priorety, unicode, run, canHaveNumber, isReversed)));
     }
 
 //add unicode digit pair to hashmap
@@ -119,6 +124,7 @@ namespace Bot {
     Bot::StringCalculator::insertOperatorInRPNList(std::list<std::unique_ptr<CountObj>> &list,
                                                    std::list<std::unique_ptr<CountObj>>::iterator &index,
                                                    Bot::Operator *operand, int paranthesePriorety) {
+        index++;
         while (index != list.end()) {
             if ((*index)->isOperator()) {
                 auto *op = (Operator *) (*index).get();
@@ -218,8 +224,8 @@ namespace Bot {
 
     std::string StringCalculator::unicodeToString(char32_t unicode) {
         std::string out;
-        for (int i = 3;i>=0;i--) {
-            unsigned char ch = (unicode>>(i*8))%256;
+        for (int i = 3; i >= 0; i--) {
+            unsigned char ch = (unicode >> (i * 8)) % 256;
             if (ch != 0) {
                 out += ch;
             }

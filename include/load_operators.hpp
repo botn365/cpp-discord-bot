@@ -102,13 +102,13 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('~',4,[](std::stack<double> &stack){
+            Str::addOperator('~',6,[](std::stack<double> &stack){
                 if (stack.size()<1) return false;
                 double d1 = stack.top();
                 stack.pop();
                 stack.push(-d1);
                 return true;
-            });
+            }, false);
 
             Str::addOperator('|' ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
@@ -160,7 +160,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('!', 3, [](std::stack<double> &stack) {
+            Str::addOperator('!', 6, [](std::stack<double> &stack) {
                 if (stack.size() < 1) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
@@ -171,7 +171,7 @@ namespace Bot {
                 }
                 stack.push(fac);
                 return true;
-            });
+            }, true, true);
 
             Str::addOperator('%', 3, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
