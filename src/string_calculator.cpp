@@ -8,13 +8,27 @@
 
 static std::unordered_map<char32_t, Bot::Operator> unicodeToOperator;
 static std::unordered_map<char32_t, int> unicodeToNumber;
+static std::unordered_map<char32_t,bool> usedUnicodeMap;
+static std::unordered_map<std::string,double> constMap;
 
 
 namespace Bot {
 
+    using usedPair = std::pair<char32_t,bool>;
+    using constPair = std::pair<std::string,double>;
     void StringCalculator::init(std::string numeTranslationFile) {
         Bot::LoadOperators::loadNumbers(numeTranslationFile);
         Bot::LoadOperators::loadOperators();
+        usedUnicodeMap.insert(usedPair('(', true));
+        usedUnicodeMap.insert(usedPair(')', true));
+        usedUnicodeMap.insert(usedPair('{', true));
+        usedUnicodeMap.insert(usedPair('}', true));
+        usedUnicodeMap.insert(usedPair(' ', true));
+        usedUnicodeMap.insert(usedPair('.', true));
+        usedUnicodeMap.insert(usedPair(',', true));
+        constMap.insert(constPair("pi",M_PI));
+        constMap.insert(constPair("e",M_E));
+        constMap.insert(constPair("g",9.8));
     }
 
     std::list<std::unique_ptr<Bot::CountObj>> Bot::StringCalculator::convertStringToRPNList(std::string_view &input) {
@@ -37,7 +51,7 @@ namespace Bot {
                 numberWasLast = true;
             } else {
                 char32_t unicode;
-                i = getUnicode(i, unicode);
+                const char *newIPos = getUnicode(i, unicode);
                 if (unicode == 0) continue;
                 if (!numberWasLast && unicode == '-') unicode = '~';
                 auto operatorLambda = getOperator(unicode);
@@ -52,6 +66,7 @@ namespace Bot {
                         numberWasLast = false;
                     }
                     indexUp = false;
+                    i = newIPos;
                 } else {
                     int bracket = getParanthese(unicode);
                     if (bracket > 0) {
@@ -64,15 +79,30 @@ namespace Bot {
                             indexUp = false;
                         }
                         bracketPriorety += bracket;
+                        i = newIPos;
                         continue;
                     }
                     if (bracket < 0) {
                         indexUp = false;
                         bracketPriorety += bracket;
+                        i = newIPos;
                         continue;
-                        //numberWasLast = false;
                     }
-                    if (unicode != ' ') break;
+                    if (unicode != ' ') {
+                        auto view = getFunctionString(&i,end);
+                        auto value = getConst(view);
+                        if (value == value) {
+                            if (numberWasLast) {
+                                insertOperatorInRPNList(list, index, multOp, bracketPriorety);
+                            }
+                            index = list.insert(++index, std::make_unique<Number>(value));
+                            indexUp = true;
+                            numberWasLast = true;
+                            i = newIPos;
+                        } else {
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -103,6 +133,10 @@ namespace Bot {
                                        bool canHaveNumber, bool isReversed) {
         unicodeToOperator.insert(
                 std::pair<char32_t, Operator>(unicode, Operator(priorety, unicode, run, canHaveNumber, isReversed)));
+        auto used = usedUnicodeMap.find(unicode);
+        if (used == usedUnicodeMap.end()) {
+            usedUnicodeMap.insert(usedPair(unicode, false));
+        }
     }
 
 //add unicode digit pair to hashmap
@@ -232,5 +266,38 @@ namespace Bot {
         }
         return out;
     }
+
+    bool StringCalculator::isUnicodeUsed(char32_t unicode) {
+        if (usedUnicodeMap.find(unicode) == usedUnicodeMap.end()) {
+            return false;
+        }
+        return true;
+    }
+}
+
+std::string_view Bot::StringCalculator::getFunctionString(const char **currentChar, const char *end) {
+    const char *newPos = *currentChar;
+    while (newPos != end) {
+        char32_t unicode;
+        const char *tempPos = getUnicode(newPos,unicode);
+        if (usedUnicodeMap.find(unicode) != usedUnicodeMap.end()) {
+            std::string_view view(*currentChar,newPos-*currentChar);
+            *currentChar = newPos;
+            return view;
+        } else {
+            newPos = tempPos;
+        }
+    }
+    std::string_view view(*currentChar,end-*currentChar);
+    *currentChar = newPos;
+    return view;
+}
+
+double Bot::StringCalculator::getConst(std::string_view &view) {
+    auto value = constMap.find(std::string(view));
+    if (value != constMap.end()) {
+        return value->second;
+    }
+    return NAN;
 }
 

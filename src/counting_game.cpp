@@ -355,6 +355,7 @@ namespace Bot {
     //a check if the message should be calculated
     //TODO allow RPN and and number prefix
     bool CountingGame::shouldCount(const std::string_view &input) {
+        return true;
         const char *index = input.data();
         const char *end = input.data() + input.size();
         while (index < end) {

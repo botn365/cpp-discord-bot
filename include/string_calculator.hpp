@@ -43,11 +43,11 @@ namespace Bot {
         bool isOperator() override { return true; }
 
         bool canHaveNumber() {
-            return extraData &= 1;
+            return extraData & 1;
         }
 
         bool isReversed() {
-            return extraData &= 2;
+            return extraData & 2;
         }
 
         std::function<bool(std::stack<double> &)> run;
@@ -64,7 +64,8 @@ namespace Bot {
 
         static double calculateFromRPNList(std::list<std::unique_ptr<CountObj>> &list);
 
-        static void addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run,bool canHaveNumber = true, bool isReversed = false);
+        static void addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run,
+                                bool canHaveNumber = true, bool isReversed = false);
 
         static void addUnicodeNumber(char32_t unicode, int value);
 
@@ -77,6 +78,12 @@ namespace Bot {
         static Operator *getOperator(char32_t unicode);
 
         static std::string unicodeToString(char32_t unicode);
+
+        static bool isUnicodeUsed(char32_t unicode);
+
+        static std::string_view getFunctionString(const char **currentChar, const char *end);
+
+        static double getConst(std::string_view &view);
 
     private:
         static int getParanthese(char32_t &unicode);
