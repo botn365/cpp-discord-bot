@@ -366,7 +366,7 @@ namespace Bot {
                 continue;
             }
             char32_t unicode;
-            index = StringCalculator::getUnicode(index, unicode);
+            StringCalculator::getUnicode(index, unicode);
             if (StringCalculator::isUnicodeUsed(unicode)) return true;
             auto funcStr = std::string(StringCalculator::getFunctionString(&index,end));
             return StringCalculator::hasFunction(funcStr);
