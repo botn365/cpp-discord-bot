@@ -47,7 +47,7 @@ namespace Bot {
                     insertOperatorInRPNList(list, index, multOp, bracketPriorety);
                 }
                 index = list.insert(++index, std::make_unique<Number>(number));
-                indexUp = true;
+                indexUp = false;
                 numberWasLast = true;
             } else {
                 char32_t unicode;
@@ -65,16 +65,17 @@ namespace Bot {
                     insertOperatorInRPNList(list, index, operatorLambda, bracketPriorety);
                     if (operatorLambda->isReversed()) {
                         index++;
+                        indexUp = false;
                     } else {
                         numberWasLast = false;
+                        indexUp = true;
                     }
-                    indexUp = false;
                     i = newIPos;
                 } else {
                     int bracket = getParanthese(unicode);
                     if (bracket > 0) {
                         if (numberWasLast) {
-                            insertOperatorInRPNList(list, index, multOp, bracketPriorety - 10);
+                            insertOperatorInRPNList(list, index, multOp, bracketPriorety);
                             numberWasLast = false;
                         }
                         if (indexUp) {
