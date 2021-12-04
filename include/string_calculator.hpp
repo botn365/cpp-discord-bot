@@ -97,11 +97,14 @@ namespace Bot {
         static double getConst(std::string_view &view);
 
     private:
+        using list = std::list<std::unique_ptr<CountObj>>;
+
+        static bool shouldCommaIndexUp(list::iterator &index, uint64_t bracketPriorety,list &list);
+
         static int getParanthese(char32_t &unicode);
 
-        static void insertOperatorInRPNList(std::list<std::unique_ptr<CountObj>> &list,
-                                            std::list<std::unique_ptr<CountObj>>::iterator &index,
-                                            Operator *operand, int paranthesePriorety);
+        static void
+        insertOperatorInRPNList(list &list, list::iterator &index, Operator *operand, int paranthesePriorety);
 
         static char32_t convertToUnicode(const char *input, int len);
     };

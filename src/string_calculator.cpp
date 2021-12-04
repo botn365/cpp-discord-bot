@@ -109,6 +109,10 @@ namespace Bot {
                         continue;
                     }
                     if (unicode == ',') {
+                        do {
+                            index++;
+                        } while (shouldCommaIndexUp(index, bracketPriorety,list));
+                        index--;
                         numberWasLast = false;
                         i = newIPos;
                         continue;
@@ -143,6 +147,18 @@ namespace Bot {
         }
         list.pop_front();
         return list;
+    }
+
+    using list = std::list<std::unique_ptr<CountObj>>;
+
+    bool StringCalculator::shouldCommaIndexUp(list::iterator &index, uint64_t bracketPriorety, list &list) {
+        if (index == list.end()) return false;
+        CountObj *ptr = (*index).get();
+        if (ptr->isOperator()) {
+            Operator *opPtr = (Operator *) ptr;
+            if (opPtr->priority >= bracketPriorety) return true;
+        }
+        return false;
     }
 
     double Bot::StringCalculator::calculateFromRPNList(std::list<std::unique_ptr<CountObj>> &inputList) {
