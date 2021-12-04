@@ -102,7 +102,6 @@ namespace Bot {
                             index = list.insert(++index, std::make_unique<Number>(value));
                             indexUp = true;
                             numberWasLast = true;
-                            i = newIPos;
                         } else {
                             break;
                         }
