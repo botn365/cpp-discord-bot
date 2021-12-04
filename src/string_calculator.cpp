@@ -52,7 +52,10 @@ namespace Bot {
             } else {
                 char32_t unicode;
                 const char *newIPos = getUnicode(i, unicode);
-                if (unicode == 0) continue;
+                if (unicode == 0) {
+                    i = newIPos;
+                    continue;
+                }
                 if (!numberWasLast && unicode == '-') unicode = '~';
                 auto operatorLambda = getOperator(unicode);
                 if (operatorLambda != nullptr) {
