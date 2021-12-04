@@ -203,6 +203,7 @@ namespace Bot {
 //add name digit pair to hashmap
     void Bot::StringCalculator::addUnicodeNumber(char32_t unicode, int value) {
         unicodeToNumber.insert(std::pair<char32_t, int>(unicode, value));
+        usedUnicodeMap.insert(std::pair<char32_t, int>(unicode,true));
     }
 
     int Bot::StringCalculator::getParanthese(char32_t &unicode) {
@@ -368,5 +369,9 @@ double Bot::StringCalculator::getConst(std::string_view &view) {
         return value->second;
     }
     return NAN;
+}
+
+bool Bot::StringCalculator::hasFunction(std::string &str) {
+    return stringToFunction.find(str) != stringToFunction.end();
 }
 

@@ -96,6 +96,8 @@ namespace Bot {
 
         static double getConst(std::string_view &view);
 
+        static bool hasFunction(std::string &str);
+
     private:
         using list = std::list<std::unique_ptr<CountObj>>;
 

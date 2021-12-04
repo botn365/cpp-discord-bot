@@ -365,14 +365,11 @@ namespace Bot {
                 index++;
                 continue;
             }
-            return true;
-            if (*index == '(') return true;
             char32_t unicode;
             index = StringCalculator::getUnicode(index, unicode);
-            int number = StringCalculator::getNumberFromUnicode(unicode);
-            if (number != -1) return true;
-            auto op = StringCalculator::getOperator(unicode);
-            return op != nullptr;
+            if (StringCalculator::isUnicodeUsed(unicode)) return true;
+            auto funcStr = std::string(StringCalculator::getFunctionString(&index,end));
+            return StringCalculator::hasFunction(funcStr);
         }
         return false;
     }
