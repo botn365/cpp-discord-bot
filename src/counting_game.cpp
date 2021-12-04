@@ -264,8 +264,10 @@ namespace Bot {
             }
             std::string_view view(message.msg->content);
             auto RPNList = StringCalculator::convertStringToRPNList(view);
+            if (RPNList.empty()) return;
             double value = StringCalculator::calculateFromRPNList(RPNList);
             if (std::isnan(value)) return;
+            if (std::isinf(value)) return;
             value = std::floor(value);
             bool isCorrect = value == ++currentCount;
             auto keySet = players.find(author);
@@ -355,7 +357,6 @@ namespace Bot {
     //a check if the message should be calculated
     //TODO allow RPN and and number prefix
     bool CountingGame::shouldCount(const std::string_view &input) {
-        return true;
         const char *index = input.data();
         const char *end = input.data() + input.size();
         while (index < end) {
@@ -364,6 +365,7 @@ namespace Bot {
                 index++;
                 continue;
             }
+            return true;
             if (*index == '(') return true;
             char32_t unicode;
             index = StringCalculator::getUnicode(index, unicode);

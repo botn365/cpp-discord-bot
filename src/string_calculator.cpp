@@ -8,14 +8,16 @@
 
 static std::unordered_map<char32_t, Bot::Operator> unicodeToOperator;
 static std::unordered_map<char32_t, int> unicodeToNumber;
-static std::unordered_map<char32_t,bool> usedUnicodeMap;
-static std::unordered_map<std::string,double> constMap;
+static std::unordered_map<char32_t, bool> usedUnicodeMap;
+static std::unordered_map<std::string, double> constMap;
+static std::unordered_map<std::string, Bot::Function> stringToFunction;
 
 
 namespace Bot {
 
-    using usedPair = std::pair<char32_t,bool>;
-    using constPair = std::pair<std::string,double>;
+    using usedPair = std::pair<char32_t, bool>;
+    using constPair = std::pair<std::string, double>;
+
     void StringCalculator::init(std::string numeTranslationFile) {
         Bot::LoadOperators::loadNumbers(numeTranslationFile);
         Bot::LoadOperators::loadOperators();
@@ -26,9 +28,9 @@ namespace Bot {
         usedUnicodeMap.insert(usedPair(' ', true));
         usedUnicodeMap.insert(usedPair('.', true));
         usedUnicodeMap.insert(usedPair(',', true));
-        constMap.insert(constPair("pi",M_PI));
-        constMap.insert(constPair("e",M_E));
-        constMap.insert(constPair("g",9.8));
+        constMap.insert(constPair("pi", M_PI));
+        constMap.insert(constPair("e", M_E));
+        constMap.insert(constPair("g", 9.8));
     }
 
     std::list<std::unique_ptr<Bot::CountObj>> Bot::StringCalculator::convertStringToRPNList(std::string_view &input) {
@@ -40,6 +42,7 @@ namespace Bot {
         bool indexUp = false;
         bool numberWasLast = false;
         auto *multOp = getOperator('*');
+        std::stack<std::pair<uint64_t, Function *>> functionStack;
         for (const char *i = input.data(); i < end;) {
             double number;
             if (getNumber(&i, number, end)) {
@@ -90,22 +93,42 @@ namespace Bot {
                         indexUp = false;
                         bracketPriorety += bracket;
                         i = newIPos;
+                        if (!functionStack.empty() && functionStack.top().first == bracketPriorety) {
+                            insertOperatorInRPNList(list, index, functionStack.top().second, bracketPriorety);
+                            functionStack.pop();
+                        }
+                        continue;
+                    }
+                    if (unicode == ',') {
+                        numberWasLast = false;
+                        i = newIPos;
                         continue;
                     }
                     if (unicode != ' ') {
-                        auto view = getFunctionString(&i,end);
-                        auto value = getConst(view);
-                        if (value == value) {
-                            if (numberWasLast) {
-                                insertOperatorInRPNList(list, index, multOp, bracketPriorety);
+                        auto view = getFunctionString(&i, end);
+                        if (*(i) == '(') {
+                            auto functionPair = stringToFunction.find(std::string{view});
+                            if (functionPair != stringToFunction.end()) {
+                                functionStack.push(
+                                        std::pair<uint64_t, Function *>(bracketPriorety, &functionPair->second));
+                                continue;
                             }
-                            index = list.insert(++index, std::make_unique<Number>(value));
-                            indexUp = true;
-                            numberWasLast = true;
+                            break;
                         } else {
+                            auto value = getConst(view);
+                            if (value == value) {
+                                if (numberWasLast) {
+                                    insertOperatorInRPNList(list, index, multOp, bracketPriorety);
+                                }
+                                index = list.insert(++index, std::make_unique<Number>(value));
+                                indexUp = true;
+                                numberWasLast = true;
+                                continue;
+                            }
                             break;
                         }
                     }
+                    i = newIPos;
                 }
             }
         }
@@ -132,14 +155,20 @@ namespace Bot {
 
 //add unicode operator pair to hashmap
     void
-    Bot::StringCalculator::addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run,
+    Bot::StringCalculator::addOperator(char32_t unicode, int priority, std::function<bool(std::stack<double> &)> run,
                                        bool canHaveNumber, bool isReversed) {
         unicodeToOperator.insert(
-                std::pair<char32_t, Operator>(unicode, Operator(priorety, unicode, run, canHaveNumber, isReversed)));
+                std::pair<char32_t, Operator>(unicode, Operator(priority, unicode, run, canHaveNumber, isReversed)));
         auto used = usedUnicodeMap.find(unicode);
         if (used == usedUnicodeMap.end()) {
             usedUnicodeMap.insert(usedPair(unicode, false));
         }
+    }
+
+    void StringCalculator::addFunction(std::string key, int priority, std::function<bool(std::stack<double> &)> run,
+                                       bool canHaveNumber, bool isReversed) {
+        stringToFunction.insert(
+                std::pair<std::string, Function>(key, Function(priority, 's', run, canHaveNumber, isReversed)));
     }
 
 //add unicode digit pair to hashmap
@@ -165,10 +194,10 @@ namespace Bot {
         while (index != list.end()) {
             if ((*index)->isOperator()) {
                 auto *op = (Operator *) (*index).get();
-                int priorety = op->priorety;
-                if (priorety < operand->priorety + paranthesePriorety) {
+                int priorety = op->priority;
+                if (priorety < operand->priority + paranthesePriorety) {
                     index = list.insert(index,
-                                        std::make_unique<Operator>(operand->priorety + paranthesePriorety,
+                                        std::make_unique<Operator>(operand->priority + paranthesePriorety,
                                                                    operand->unicode, operand->run));
                     index--;
                     return;
@@ -176,7 +205,7 @@ namespace Bot {
             }
             index++;
         }
-        index = list.insert(index, std::make_unique<Operator>(operand->priorety + paranthesePriorety, operand->unicode,
+        index = list.insert(index, std::make_unique<Operator>(operand->priority + paranthesePriorety, operand->unicode,
                                                               operand->run));
         index--;
     }
@@ -199,12 +228,19 @@ namespace Bot {
         bool comma = false;
         bool hasNumber = false;
         unsigned int multiplyer = 10;
+        const char *old = nullptr;
         while (*input < end) {
             char32_t unicode;
             const char *value = getUnicode(*input, unicode);
+            if (value == old) return false;
+            old = value;
             int result = getNumberFromUnicode(unicode);
             if (result == -1) {
-                if (unicode == ',' || unicode == '.') {
+                if (unicode == '_') {
+                    *input = value;
+                    continue;
+                }
+                if (unicode == '.') {
                     *input = value;
                     comma = true;
                 } else {
@@ -276,22 +312,23 @@ namespace Bot {
         }
         return true;
     }
+
 }
 
 std::string_view Bot::StringCalculator::getFunctionString(const char **currentChar, const char *end) {
     const char *newPos = *currentChar;
     while (newPos != end) {
         char32_t unicode;
-        const char *tempPos = getUnicode(newPos,unicode);
+        const char *tempPos = getUnicode(newPos, unicode);
         if (usedUnicodeMap.find(unicode) != usedUnicodeMap.end()) {
-            std::string_view view(*currentChar,newPos-*currentChar);
+            std::string_view view(*currentChar, newPos - *currentChar);
             *currentChar = newPos;
             return view;
         } else {
             newPos = tempPos;
         }
     }
-    std::string_view view(*currentChar,end-*currentChar);
+    std::string_view view(*currentChar, end - *currentChar);
     *currentChar = newPos;
     return view;
 }

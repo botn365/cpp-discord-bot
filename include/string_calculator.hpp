@@ -20,7 +20,7 @@ namespace Bot {
 
     class Number : public CountObj {
     public:
-        Number(double value) : value{value} {}
+        explicit Number(double value) : value{value} {}
 
         bool isOperator() override { return false; }
 
@@ -29,9 +29,9 @@ namespace Bot {
 
     class Operator : public CountObj {
     public:
-        Operator(int priorety, char32_t unicode, std::function<bool(std::stack<double> &)> run,
+        Operator(int priority, std::string unicode, std::function<bool(std::stack<double> &)> run,
                  bool canHaveNumber = true, bool isReversed = false) :
-                priorety{priorety}, unicode{unicode}, run{std::move(run)} {
+                priority{priority}, unicode{std::move(unicode)}, run{std::move(run)} {
             if (canHaveNumber) {
                 extraData |= 1;
                 if (isReversed) {
@@ -42,19 +42,27 @@ namespace Bot {
 
         bool isOperator() override { return true; }
 
-        bool canHaveNumber() {
+        [[nodiscard]] bool canHaveNumber() const {
             return extraData & 1;
         }
 
-        bool isReversed() {
+        [[nodiscard]] bool isReversed() const {
             return extraData & 2;
         }
 
         std::function<bool(std::stack<double> &)> run;
-        char32_t unicode;
+        std::string unicode;
         char extraData = 0;
-        int priorety;
+        int priority;
     };
+
+    struct Function : public Operator {
+        Function(int priority, std::string name, const std::function<bool(std::stack<double> &)> &run,
+                 bool canHaveNumber, bool isReversed) : Operator(priority, std::move(name), run, canHaveNumber,
+                                                                 isReversed) {};
+
+    };
+
 
     class StringCalculator {
     public:
@@ -64,8 +72,11 @@ namespace Bot {
 
         static double calculateFromRPNList(std::list<std::unique_ptr<CountObj>> &list);
 
-        static void addOperator(char32_t unicode, int priorety, std::function<bool(std::stack<double> &)> run,
+        static void addOperator(char32_t unicode, int priority, std::function<bool(std::stack<double> &)> run,
                                 bool canHaveNumber = true, bool isReversed = false);
+
+        static void addFunction(std::string, int priority, std::function<bool(std::stack<double> &)> run,
+                                bool canHaveNumber = true, bool isReversed = true);
 
         static void addUnicodeNumber(char32_t unicode, int value);
 

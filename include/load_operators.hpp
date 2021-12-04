@@ -182,6 +182,72 @@ namespace Bot {
                 stack.push(d2%d1);
                 return true;
             });
+
+            Str::addFunction("sin",6,[](std::stack<double> &stack){
+                if (stack.size() < 1) return false;
+                double out = sin(stack.top());
+                stack.pop();
+                stack.push(out);
+                return true;
+            });
+
+            Str::addFunction("cos",6,[](std::stack<double> &stack){
+                if (stack.size() < 1) return false;
+                double out = cos(stack.top());
+                stack.pop();
+                stack.push(out);
+                return true;
+            });
+
+            Str::addFunction("sqrt",6,[](std::stack<double> &stack){
+                if (stack.size() < 1) return false;
+                double d1 = stack.top();
+                stack.pop();
+                stack.push(sqrt(d1));
+                return true;
+            });
+
+            Str::addFunction("tan",6,[](std::stack<double> &stack){
+                if (stack.size() < 1) return false;
+                double out = tan(stack.top());
+                stack.pop();
+                stack.push(out);
+                return true;
+            });
+
+            Str::addFunction("ln",6,[](std::stack<double> &stack){
+                if (stack.size() < 1) return false;
+                double out = log(stack.top());
+                stack.pop();
+                stack.push(out);
+                return true;
+            });
+
+            Str::addFunction("log",6,[](std::stack<double> &stack){
+                if (stack.size() < 2) return false;
+                double d1 = stack.top();
+                stack.pop();
+                double d2 = stack.top();
+                stack.pop();
+                stack.push(log(d2)/log(d1));
+                return true;
+            });
+
+            Str::addFunction("log2",6,[](std::stack<double> &stack){
+                if (stack.size() < 1) return false;
+                double out = log2(stack.top());
+                stack.pop();
+                stack.push(out);
+                return true;
+            });
+
+            Str::addFunction("log10",6,[](std::stack<double> &stack){
+                if (stack.size() < 1) return false;
+                double out = log10(stack.top());
+                stack.pop();
+                stack.push(out);
+                return true;
+            });
         }
 
         static std::string iFileToString(std::string file) {
