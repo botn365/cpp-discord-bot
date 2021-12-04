@@ -266,13 +266,13 @@ namespace Bot {
             unicode = *input;
             return ++input;
         } else if ((*input & 0xE0) == 192) {
-            unicode = converToUnicode(input, 2);
+            unicode = convertToUnicode(input, 2);
             return input += 2;
         } else if ((*input & 0xF0) == 224) {
-            unicode = converToUnicode(input, 3);
+            unicode = convertToUnicode(input, 3);
             return input += 3;
         } else if ((*input & 0xF8) == 240) {
-            unicode = converToUnicode(input, 4);
+            unicode = convertToUnicode(input, 4);
             return input += 4;
         }
         unicode = 0;
@@ -280,7 +280,7 @@ namespace Bot {
     }
 
 //converts a char* to unicode while checking if it is formed correctly
-    char32_t Bot::StringCalculator::converToUnicode(const char *input, int len) {
+    char32_t Bot::StringCalculator::convertToUnicode(const char *input, int len) {
         unsigned char value = *input;
         char32_t out = value;
         for (int i = 1; i < len; i++) {

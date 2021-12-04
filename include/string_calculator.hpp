@@ -103,7 +103,7 @@ namespace Bot {
                                             std::list<std::unique_ptr<CountObj>>::iterator &index,
                                             Operator *operand, int paranthesePriorety);
 
-        static char32_t converToUnicode(const char *input, int len);
+        static char32_t convertToUnicode(const char *input, int len);
     };
 }
 
