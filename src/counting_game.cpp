@@ -369,7 +369,7 @@ namespace Bot {
             StringCalculator::getUnicode(index, unicode);
             if (StringCalculator::isUnicodeUsed(unicode)) return true;
             auto funcStr = std::string(StringCalculator::getFunctionString(&index,end));
-            return StringCalculator::hasFunction(funcStr);
+            return StringCalculator::hasFunction(funcStr) || StringCalculator::hasConst(funcStr);
         }
         return false;
     }

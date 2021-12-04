@@ -337,41 +337,40 @@ namespace Bot {
     }
 
     bool StringCalculator::isUnicodeUsed(char32_t unicode) {
-        if (usedUnicodeMap.find(unicode) == usedUnicodeMap.end()) {
-            return false;
+        return usedUnicodeMap.find(unicode) != usedUnicodeMap.end();
+    }
+    std::string_view Bot::StringCalculator::getFunctionString(const char **currentChar, const char *end) {
+        const char *newPos = *currentChar;
+        while (newPos != end) {
+            char32_t unicode;
+            const char *tempPos = getUnicode(newPos, unicode);
+            if (usedUnicodeMap.find(unicode) != usedUnicodeMap.end()) {
+                std::string_view view(*currentChar, newPos - *currentChar);
+                *currentChar = newPos;
+                return view;
+            } else {
+                newPos = tempPos;
+            }
         }
-        return true;
+        std::string_view view(*currentChar, end - *currentChar);
+        *currentChar = newPos;
+        return view;
     }
 
-}
-
-std::string_view Bot::StringCalculator::getFunctionString(const char **currentChar, const char *end) {
-    const char *newPos = *currentChar;
-    while (newPos != end) {
-        char32_t unicode;
-        const char *tempPos = getUnicode(newPos, unicode);
-        if (usedUnicodeMap.find(unicode) != usedUnicodeMap.end()) {
-            std::string_view view(*currentChar, newPos - *currentChar);
-            *currentChar = newPos;
-            return view;
-        } else {
-            newPos = tempPos;
+    double Bot::StringCalculator::getConst(std::string_view &view) {
+        auto value = constMap.find(std::string(view));
+        if (value != constMap.end()) {
+            return value->second;
         }
+        return NAN;
     }
-    std::string_view view(*currentChar, end - *currentChar);
-    *currentChar = newPos;
-    return view;
-}
 
-double Bot::StringCalculator::getConst(std::string_view &view) {
-    auto value = constMap.find(std::string(view));
-    if (value != constMap.end()) {
-        return value->second;
+    bool Bot::StringCalculator::hasFunction(std::string &str) {
+        return stringToFunction.find(str) != stringToFunction.end();
     }
-    return NAN;
-}
 
-bool Bot::StringCalculator::hasFunction(std::string &str) {
-    return stringToFunction.find(str) != stringToFunction.end();
+    bool Bot::StringCalculator::hasConst(std::string &str) {
+        return constMap.find(str) != constMap.end();
+    }
 }
 

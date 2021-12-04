@@ -98,6 +98,8 @@ namespace Bot {
 
         static bool hasFunction(std::string &str);
 
+        static bool hasConst(std::string &str);
+
     private:
         using list = std::list<std::unique_ptr<CountObj>>;
 
