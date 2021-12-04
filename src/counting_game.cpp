@@ -538,7 +538,7 @@ namespace Bot {
                 for (auto &count: list) {
                     if (count->isOperator()) {
                         Operator *op = (Operator *) count.get();
-                        ss << Bot::StringCalculator::unicodeToString(op->unicode) << "\n";
+                        ss << op->name << "\n";
                     } else {
                         Number *num = (Number *) count.get();
                         ss << num->value << "\n";

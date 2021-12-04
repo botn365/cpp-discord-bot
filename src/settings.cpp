@@ -36,7 +36,7 @@ namespace Bot {
             unicode.SetString("unicodeToNumber.json");
             doc.AddMember("unicode_translation",unicode,doc.GetAllocator());
             shouldSave = true;
-            std::cout<<"No location for unicode translation file found in settings. Putting it in default location. ~/unicodeToNumber.json\n";
+            std::cout<<"No location for name translation file found in settings. Putting it in default location. ~/unicodeToNumber.json\n";
         }
         saveLocation = std::move(file);
         if (shouldSave) {
@@ -72,7 +72,7 @@ namespace Bot {
         try {
             return doc["unicode_translation"].GetString();
         } catch (std::exception &e) {
-            throw std::runtime_error("unicode translation location not found");
+            throw std::runtime_error("name translation location not found");
         }
     }
 

@@ -31,7 +31,7 @@ namespace Bot {
     public:
         Operator(int priority, std::string unicode, std::function<bool(std::stack<double> &)> run,
                  bool canHaveNumber = true, bool isReversed = false) :
-                priority{priority}, unicode{std::move(unicode)}, run{std::move(run)} {
+                priority{priority}, name{std::move(unicode)}, run{std::move(run)} {
             if (canHaveNumber) {
                 extraData |= 1;
                 if (isReversed) {
@@ -51,7 +51,7 @@ namespace Bot {
         }
 
         std::function<bool(std::stack<double> &)> run;
-        std::string unicode;
+        std::string name;
         char extraData = 0;
         int priority;
     };
@@ -72,7 +72,7 @@ namespace Bot {
 
         static double calculateFromRPNList(std::list<std::unique_ptr<CountObj>> &list);
 
-        static void addOperator(char32_t unicode, int priority, std::function<bool(std::stack<double> &)> run,
+        static void addOperator(std::string unicode, int priority, std::function<bool(std::stack<double> &)> run,
                                 bool canHaveNumber = true, bool isReversed = false);
 
         static void addFunction(std::string, int priority, std::function<bool(std::stack<double> &)> run,

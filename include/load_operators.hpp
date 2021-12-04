@@ -30,7 +30,7 @@ namespace Bot {
                 throw std::runtime_error(ss.str());
             }
             if (!doc.HasMember("codes")) {
-                throw std::runtime_error("invalid unicode translation file");
+                throw std::runtime_error("invalid name translation file");
             }
             auto &codes = doc["codes"];
             for (auto &code: codes.GetArray()) {
@@ -39,7 +39,7 @@ namespace Bot {
         }
 
         static void loadOperators() {
-            Str::addOperator('+', 1, [](std::stack<double> &stack) {
+            Str::addOperator("+", 1, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -48,7 +48,7 @@ namespace Bot {
                 stack.push(d1 + d2);
                 return true;
             });
-            Str::addOperator('-', 1, [](std::stack<double> &stack) {
+            Str::addOperator("-", 1, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -57,7 +57,7 @@ namespace Bot {
                 stack.push(d2-d1);
                 return true;
             });
-            Str::addOperator('*', 2, [](std::stack<double> &stack) {
+            Str::addOperator("*", 2, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -66,7 +66,7 @@ namespace Bot {
                 stack.push(d1 * d2);
                 return true;
             });
-            Str::addOperator('x', 2, [](std::stack<double> &stack) {
+            Str::addOperator("x", 2, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -75,7 +75,7 @@ namespace Bot {
                 stack.push(d1 * d2);
                 return true;
             });
-            Str::addOperator('/', 2, [](std::stack<double> &stack) {
+            Str::addOperator("/", 2, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -84,7 +84,7 @@ namespace Bot {
                 stack.push(d2/d1);
                 return true;
             });
-            Str::addOperator('^', 3, [](std::stack<double> &stack) {
+            Str::addOperator("^", 3, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -94,7 +94,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator(0xE2889A, 3, [](std::stack<double> &stack) {
+            Str::addOperator("√", 3, [](std::stack<double> &stack) {
                 if (stack.size() < 1) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -102,7 +102,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('~',6,[](std::stack<double> &stack){
+            Str::addOperator("~",6,[](std::stack<double> &stack){
                 if (stack.size()<1) return false;
                 double d1 = stack.top();
                 stack.pop();
@@ -110,7 +110,7 @@ namespace Bot {
                 return true;
             }, false);
 
-            Str::addOperator('|' ,0,[](std::stack<double> &stack){
+            Str::addOperator("|" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
@@ -120,7 +120,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('&' ,0,[](std::stack<double> &stack){
+            Str::addOperator("&" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
@@ -130,7 +130,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('\\' ,0,[](std::stack<double> &stack){
+            Str::addOperator("\\" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
@@ -140,7 +140,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('<' ,0,[](std::stack<double> &stack){
+            Str::addOperator("<" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
@@ -150,7 +150,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('>' ,0,[](std::stack<double> &stack){
+            Str::addOperator(">" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
@@ -160,7 +160,7 @@ namespace Bot {
                 return true;
             });
 
-            Str::addOperator('!', 6, [](std::stack<double> &stack) {
+            Str::addOperator("!", 6, [](std::stack<double> &stack) {
                 if (stack.size() < 1) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
@@ -173,7 +173,7 @@ namespace Bot {
                 return true;
             }, true, true);
 
-            Str::addOperator('%', 3, [](std::stack<double> &stack) {
+            Str::addOperator("%", 3, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
                 int64_t d1 = stack.top();
                 stack.pop();

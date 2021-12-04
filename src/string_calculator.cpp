@@ -44,6 +44,7 @@ namespace Bot {
         auto *multOp = getOperator('*');
         std::stack<std::pair<uint64_t, Function *>> functionStack;
         for (const char *i = input.data(); i < end;) {
+            if (list.size() > 200) return {};
             double number;
             if (getNumber(&i, number, end)) {
                 if (numberWasLast) {
@@ -71,7 +72,7 @@ namespace Bot {
                         indexUp = false;
                     } else {
                         numberWasLast = false;
-                        indexUp = true;
+                        indexUp = false;
                     }
                     i = newIPos;
                 } else {
@@ -94,8 +95,16 @@ namespace Bot {
                         bracketPriorety += bracket;
                         i = newIPos;
                         if (!functionStack.empty() && functionStack.top().first == bracketPriorety) {
-                            insertOperatorInRPNList(list, index, functionStack.top().second, bracketPriorety);
+                            operatorLambda = functionStack.top().second;
+                            insertOperatorInRPNList(list, index, operatorLambda, bracketPriorety);
                             functionStack.pop();
+                            if (operatorLambda->isReversed()) {
+                                index++;
+                                indexUp = false;
+                            } else {
+                                numberWasLast = false;
+                                indexUp = false;
+                            }
                         }
                         continue;
                     }
@@ -153,25 +162,29 @@ namespace Bot {
         return stack.top();
     }
 
-//add unicode operator pair to hashmap
+//add name operator pair to hashmap
     void
-    Bot::StringCalculator::addOperator(char32_t unicode, int priority, std::function<bool(std::stack<double> &)> run,
+    Bot::StringCalculator::addOperator(std::string unicode, int priority, std::function<bool(std::stack<double> &)> run,
                                        bool canHaveNumber, bool isReversed) {
+
+        char32_t unicodeValue;
+        getUnicode(unicode.c_str(), unicodeValue);
         unicodeToOperator.insert(
-                std::pair<char32_t, Operator>(unicode, Operator(priority, unicode, run, canHaveNumber, isReversed)));
-        auto used = usedUnicodeMap.find(unicode);
+                std::pair<char32_t, Operator>(unicodeValue,
+                                              Operator(priority, unicode, run, canHaveNumber, isReversed)));
+        auto used = usedUnicodeMap.find(unicodeValue);
         if (used == usedUnicodeMap.end()) {
-            usedUnicodeMap.insert(usedPair(unicode, false));
+            usedUnicodeMap.insert(usedPair(unicodeValue, false));
         }
     }
 
     void StringCalculator::addFunction(std::string key, int priority, std::function<bool(std::stack<double> &)> run,
                                        bool canHaveNumber, bool isReversed) {
         stringToFunction.insert(
-                std::pair<std::string, Function>(key, Function(priority, 's', run, canHaveNumber, isReversed)));
+                std::pair<std::string, Function>(key, Function(priority, key, run, canHaveNumber, isReversed)));
     }
 
-//add unicode digit pair to hashmap
+//add name digit pair to hashmap
     void Bot::StringCalculator::addUnicodeNumber(char32_t unicode, int value) {
         unicodeToNumber.insert(std::pair<char32_t, int>(unicode, value));
     }
@@ -198,14 +211,14 @@ namespace Bot {
                 if (priorety < operand->priority + paranthesePriorety) {
                     index = list.insert(index,
                                         std::make_unique<Operator>(operand->priority + paranthesePriorety,
-                                                                   operand->unicode, operand->run));
+                                                                   operand->name, operand->run));
                     index--;
                     return;
                 }
             }
             index++;
         }
-        index = list.insert(index, std::make_unique<Operator>(operand->priority + paranthesePriorety, operand->unicode,
+        index = list.insert(index, std::make_unique<Operator>(operand->priority + paranthesePriorety, operand->name,
                                                               operand->run));
         index--;
     }
@@ -279,7 +292,7 @@ namespace Bot {
         return ++input;
     }
 
-//converts a char* to unicode while checking if it is formed correctly
+//converts a char* to name while checking if it is formed correctly
     char32_t Bot::StringCalculator::convertToUnicode(const char *input, int len) {
         unsigned char value = *input;
         char32_t out = value;
