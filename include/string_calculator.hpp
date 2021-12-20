@@ -100,6 +100,8 @@ namespace Bot {
 
         static bool hasConst(std::string &str);
 
+        static double floor(double in);
+
     private:
         using list = std::list<std::unique_ptr<CountObj>>;
 

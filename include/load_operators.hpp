@@ -112,9 +112,9 @@ namespace Bot {
 
             Str::addOperator("|" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
-                int64_t d1 = stack.top();
+                int64_t d1 = Str::floor(stack.top());
                 stack.pop();
-                int64_t d2 = stack.top();
+                int64_t d2 = Str::floor(stack.top());
                 stack.pop();
                 stack.push(d2 | d1);
                 return true;
@@ -122,9 +122,9 @@ namespace Bot {
 
             Str::addOperator("&" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
-                int64_t d1 = stack.top();
+                int64_t d1 = Str::floor(stack.top());
                 stack.pop();
-                int64_t d2 = stack.top();
+                int64_t d2 = Str::floor(stack.top());
                 stack.pop();
                 stack.push(d2 & d1);
                 return true;
@@ -132,9 +132,9 @@ namespace Bot {
 
             Str::addOperator("\\" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
-                int64_t d1 = stack.top();
+                int64_t d1 = Str::floor(stack.top());
                 stack.pop();
-                int64_t d2 = stack.top();
+                int64_t d2 = Str::floor(stack.top());
                 stack.pop();
                 stack.push(d2 ^ d1);
                 return true;
@@ -142,9 +142,9 @@ namespace Bot {
 
             Str::addOperator("<" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
-                int64_t d1 = stack.top();
+                int64_t d1 = Str::floor(stack.top());
                 stack.pop();
-                int64_t d2 = stack.top();
+                int64_t d2 = Str::floor(stack.top());
                 stack.pop();
                 stack.push(d2 << d1);
                 return true;
@@ -152,9 +152,9 @@ namespace Bot {
 
             Str::addOperator(">" ,0,[](std::stack<double> &stack){
                 if (stack.size()< 2) return false;
-                int64_t d1 = stack.top();
+                int64_t d1 = Str::floor(stack.top());
                 stack.pop();
-                int64_t d2 = stack.top();
+                int64_t d2 = Str::floor(stack.top());
                 stack.pop();
                 stack.push(d2 >> d1);
                 return true;
@@ -162,7 +162,7 @@ namespace Bot {
 
             Str::addOperator("!", 6, [](std::stack<double> &stack) {
                 if (stack.empty()) return false;
-                int64_t d1 = stack.top();
+                int64_t d1 = Str::floor(stack.top());
                 stack.pop();
                 if (d1 < 0) return false;
                 double fac = 1.0;
@@ -175,9 +175,9 @@ namespace Bot {
 
             Str::addOperator("%", 3, [](std::stack<double> &stack) {
                 if (stack.size() < 2) return false;
-                int64_t d1 = stack.top();
+                int64_t d1 = Str::floor(stack.top());
                 stack.pop();
-                int64_t d2 = stack.top();
+                int64_t d2 = Str::floor(stack.top());
                 stack.pop();
                 stack.push(d2%d1);
                 return true;

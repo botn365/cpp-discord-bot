@@ -269,7 +269,7 @@ namespace Bot {
             if (std::isnan(value)) return;
             if (std::isinf(value)) return;
             value = std::floor(value);
-            bool isCorrect = value == ++currentCount;
+            bool isCorrect = StringCalculator::floor(value) == ++currentCount;
             auto keySet = players.find(author);
             if (isCorrect && highestCount < currentCount) {
                 highestCount = currentCount;
@@ -598,7 +598,7 @@ namespace Bot {
             }
             getPlayerStats.add_option(
                     dpp::command_option(
-                            dpp::co_user, "user", "user to get stts from"
+                            dpp::co_user, "user", "user to get stats from"
                     ));
             app->registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);

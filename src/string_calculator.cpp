@@ -372,5 +372,9 @@ namespace Bot {
     bool Bot::StringCalculator::hasConst(std::string &str) {
         return constMap.find(str) != constMap.end();
     }
+
+    double StringCalculator::floor(double in) {
+        return std::floor(in+0.000001);
+    }
 }
 
