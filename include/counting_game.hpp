@@ -67,6 +67,7 @@ namespace Bot {
         int id;
         dpp::snowflake channelID;
         dpp::snowflake failRollID;
+        dpp::snowflake botSpam;
         uint64_t currentCount;
         Player *lastPlayer;
         uint64_t highestCount = 0;

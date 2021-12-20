@@ -115,6 +115,10 @@ namespace Bot {
         if (SQLITE_OK != ec) {
             sqlite3_free(err);
         }
+        ec = sqlite3_exec(db, "ALTER TABLE GAME ADD BOT_CHANNEL INT;", 0, 0, &err);
+        if (SQLITE_OK != ec) {
+            sqlite3_free(err);
+        }
         ec = sqlite3_exec(db, "ALTER TABLE PLAYER ADD SAVES INT;", 0, 0, &err);
         if (SQLITE_OK != ec) {
             sqlite3_free(err);
@@ -211,6 +215,7 @@ namespace Bot {
         ss << "SET CHANNEL_ID = " << channelID;
         ss << " , CURRENT_COUNT = " << currentCount;
         ss << " , FAIL_ROLL_ID = " << failRollID;
+        ss << " , BOT_CHANNEL = " << botSpam;
         if (lastPlayer != nullptr) {
             ss << " , LAST_PLAYER = " << lastPlayer->userId;
         } else {
@@ -439,7 +444,7 @@ namespace Bot {
 
         {
             dpp::command_option setFailRoll(dpp::co_sub_command, "set_fail_roll",
-                                            "set wich roll it should give the player if they count wrong");
+                                            "set which roll it should give the player if they count wrong");
             setFailRoll.add_option(
                     dpp::command_option(
                             dpp::command_option(dpp::co_role, "fail_roll", "leave option out to not give roll")
@@ -464,6 +469,35 @@ namespace Bot {
                                           .set_flags(dpp::m_ephemeral)
                                           .set_content(ss.str()));
             }, 1);
+        }
+
+        {
+            dpp::command_option setFailRoll(dpp::co_sub_command, "set_bot_channel",
+                                            "set which channel is the bot spam channel");
+            setFailRoll.add_option(
+                    dpp::command_option(
+                            dpp::command_option(dpp::co_channel, "bot_channel", "if empty no channel is the bot spam channel")
+                    ));
+            command.add_option(setFailRoll);
+            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+                auto &data = cmd_data.options[0].options[0];
+                std::stringstream ss;
+                if (!data.options.empty()) {
+                    auto value = std::get<dpp::snowflake>(data.options[0].value);
+                    botSpam = value;
+                    ss << "bot spam channel set to <#" << botSpam << ">";
+                } else {
+                    botSpam = 0;
+                    ss << "no channel for bot spam";
+                }
+                saveGame();
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(ss.str()));
+            }, 2);
         }
 
         {
@@ -502,7 +536,7 @@ namespace Bot {
                 interaction.reply(dpp::ir_channel_message_with_source,dpp::message()
                 .set_type(dpp::mt_reply).set_flags(dpp::m_ephemeral)
                 .set_content(ss.str()));
-            }, 2);
+            }, 3);
         }
 
         baseCommand.add_option(command);
@@ -541,12 +575,20 @@ namespace Bot {
                         ss << num->value << "\n";
                     }
                 }
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(ss.str())
-                );
+                if (interaction.command.channel_id == botSpam) {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_content(ss.str())
+                    );
+                } else {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_flags(dpp::m_ephemeral)
+                                              .set_content(ss.str())
+                    );
+                }
             });
         }
 
@@ -577,12 +619,20 @@ namespace Bot {
                 for (auto &player: players) {
                     ss << "#" << i++ << " <@" << player->userId << ">, " << player->getHighestCount() << "\n";
                 }
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(ss.str())
-                );
+                if (interaction.command.channel_id == botSpam) {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_content(ss.str())
+                    );
+                } else {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_flags(dpp::m_ephemeral)
+                                              .set_content(ss.str())
+                    );
+                }
             });
         }
 
@@ -618,19 +668,35 @@ namespace Bot {
                     ss << "Total Count = " << user.getTotalCount() << "\n";
                     ss << "Total Correct = " << user.getCorectCount() << "\n";
                     ss << "Total Failed = " << user.getFailedCount() << "\n";
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_flags(dpp::m_ephemeral)
-                                              .set_content(ss.str())
-                    );
+                    if (interaction.command.channel_id == botSpam) {
+                        interaction.reply(dpp::ir_channel_message_with_source,
+                                          dpp::message()
+                                                  .set_type(dpp::mt_reply)
+                                                  .set_content(ss.str())
+                        );
+                    } else {
+                        interaction.reply(dpp::ir_channel_message_with_source,
+                                          dpp::message()
+                                                  .set_type(dpp::mt_reply)
+                                                  .set_flags(dpp::m_ephemeral)
+                                                  .set_content(ss.str())
+                        );
+                    }
                 } else {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_flags(dpp::m_ephemeral)
-                                              .set_content("User Not Found")
-                    );
+                    if (interaction.command.channel_id == botSpam) {
+                        interaction.reply(dpp::ir_channel_message_with_source,
+                                          dpp::message()
+                                                  .set_type(dpp::mt_reply)
+                                                  .set_content("User Not Found")
+                        );
+                    } else {
+                        interaction.reply(dpp::ir_channel_message_with_source,
+                                          dpp::message()
+                                                  .set_type(dpp::mt_reply)
+                                                  .set_flags(dpp::m_ephemeral)
+                                                  .set_content("User Not Found")
+                        );
+                    }
                 }
             });
         }
@@ -654,12 +720,20 @@ namespace Bot {
                     ss << "No Last User\n";
                 }
                 ss << "Highest Count = " << highestCount << "\n";
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(ss.str())
-                );
+                if (interaction.command.channel_id == botSpam) {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_content(ss.str())
+                    );
+                } else {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_flags(dpp::m_ephemeral)
+                                              .set_content(ss.str())
+                    );
+                }
             });
         }
         {
@@ -690,12 +764,20 @@ namespace Bot {
                 for (auto &value: StringCalculator::getFunctionMap()) {
                     ss<<value.first<<"\n";
                 }
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(ss.str())
-                );
+                if (interaction.command.channel_id == botSpam) {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_content(ss.str())
+                    );
+                } else {
+                    interaction.reply(dpp::ir_channel_message_with_source,
+                                      dpp::message()
+                                              .set_type(dpp::mt_reply)
+                                              .set_flags(dpp::m_ephemeral)
+                                              .set_content(ss.str())
+                    );
+                }
             });
         }
     }
