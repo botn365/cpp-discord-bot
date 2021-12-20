@@ -662,6 +662,42 @@ namespace Bot {
                 );
             });
         }
+        {
+            dpp::slashcommand command;
+            std::string name = "syntax";
+            command.set_name(name);
+            command.set_description("print all valid syntax");
+            command.set_type(dpp::ctxm_chat_input);
+            command.set_application_id(bot.me.id);
+            for (auto &com: settings.getCommandPermissions(name)) {
+                command.add_permission(com);
+            }
+            app->registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+                std::stringstream ss;
+                ss<<"valid digits\n";
+                for (auto &value : StringCalculator::getNumberMap()) {
+                    ss<<StringCalculator::unicodeToString(value.first)<<" : "<<value.second<<"\n";
+                }
+                ss<<"\nvalid operators\n";
+                for (auto &value: StringCalculator::getOperatorMap()) {
+                    ss<<StringCalculator::unicodeToString(value.first)<<"\n";
+                }
+                ss<<"\nvalid constants\n";
+                for (auto &value: StringCalculator::getConstMap()) {
+                    ss<<value.first<<" : "<<value.second<<"\n";
+                }
+                ss<<"\nvalid functions\n";
+                for (auto &value: StringCalculator::getFunctionMap()) {
+                    ss<<value.first<<"\n";
+                }
+                interaction.reply(dpp::ir_channel_message_with_source,
+                                  dpp::message()
+                                          .set_type(dpp::mt_reply)
+                                          .set_flags(dpp::m_ephemeral)
+                                          .set_content(ss.str())
+                );
+            });
+        }
     }
 
 

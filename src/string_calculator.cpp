@@ -31,6 +31,7 @@ namespace Bot {
         constMap.insert(constPair("pi", M_PI));
         constMap.insert(constPair("e", M_E));
         constMap.insert(constPair("g", 9.8));
+        constMap.insert(constPair("π", 3));
     }
 
     std::list<std::unique_ptr<Bot::CountObj>> Bot::StringCalculator::convertStringToRPNList(std::string_view &input) {
@@ -375,6 +376,22 @@ namespace Bot {
 
     double StringCalculator::floor(double in) {
         return std::floor(in+0.000001);
+    }
+
+    std::unordered_map<char32_t, Bot::Operator> StringCalculator::getOperatorMap() {
+        return unicodeToOperator;
+    }
+
+    std::unordered_map<char32_t, int> StringCalculator::getNumberMap() {
+        return unicodeToNumber;
+    }
+
+    std::unordered_map<std::string, Bot::Function> StringCalculator::getFunctionMap() {
+        return stringToFunction;
+    }
+
+    std::unordered_map<std::string, double> StringCalculator::getConstMap() {
+        return constMap;
     }
 }
 

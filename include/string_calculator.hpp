@@ -102,10 +102,18 @@ namespace Bot {
 
         static double floor(double in);
 
+        static std::unordered_map<char32_t, Bot::Operator> getOperatorMap();
+
+        static std::unordered_map<char32_t, int> getNumberMap();
+
+        static std::unordered_map<std::string, Bot::Function> getFunctionMap();
+
+        static std::unordered_map<std::string, double> getConstMap();
+
     private:
         using list = std::list<std::unique_ptr<CountObj>>;
 
-        static bool shouldCommaIndexUp(list::iterator &index, uint64_t bracketPriorety,list &list);
+        static bool shouldCommaIndexUp(list::iterator &index, uint64_t bracketPriorety, list &list);
 
         static int getParanthese(char32_t &unicode);
 
