@@ -112,7 +112,7 @@ namespace Bot {
                     if (unicode == ',') {
                         do {
                             index++;
-                        } while (shouldCommaIndexUp(index, bracketPriorety,list));
+                        } while (shouldCommaIndexUp(index, bracketPriorety, list));
                         index--;
                         numberWasLast = false;
                         i = newIPos;
@@ -204,7 +204,7 @@ namespace Bot {
 //add name digit pair to hashmap
     void Bot::StringCalculator::addUnicodeNumber(char32_t unicode, int value) {
         unicodeToNumber.insert(std::pair<char32_t, int>(unicode, value));
-        usedUnicodeMap.insert(std::pair<char32_t, int>(unicode,true));
+        usedUnicodeMap.insert(std::pair<char32_t, int>(unicode, true));
     }
 
     int Bot::StringCalculator::getParanthese(char32_t &unicode) {
@@ -315,7 +315,7 @@ namespace Bot {
         unsigned char value = *input;
         char32_t out = value;
         for (int i = 1; i < len; i++) {
-            if ((*(input + i) & 0xc) == 8) {
+            if (i == 0 || (*(input + i) & 0xc0) == 0x80) {
                 out <<= 8;
                 value = *(input + i);
                 out += value;
@@ -340,6 +340,7 @@ namespace Bot {
     bool StringCalculator::isUnicodeUsed(char32_t unicode) {
         return usedUnicodeMap.find(unicode) != usedUnicodeMap.end();
     }
+
     std::string_view Bot::StringCalculator::getFunctionString(const char **currentChar, const char *end) {
         const char *newPos = *currentChar;
         while (newPos != end) {
@@ -375,7 +376,7 @@ namespace Bot {
     }
 
     double StringCalculator::floor(double in) {
-        return std::floor(in+0.000001);
+        return std::floor(in + 0.000001);
     }
 
     std::unordered_map<char32_t, Bot::Operator> StringCalculator::getOperatorMap() {
