@@ -95,7 +95,7 @@ namespace Bot {
             });
 
             Str::addOperator("√", 3, [](std::stack<double> &stack) {
-                if (stack.size() < 1) return false;
+                if (stack.empty()) return false;
                 double d1 = stack.top();
                 stack.pop();
                 stack.push(sqrt(d1));
@@ -103,7 +103,7 @@ namespace Bot {
             });
 
             Str::addOperator("~",6,[](std::stack<double> &stack){
-                if (stack.size()<1) return false;
+                if (stack.empty()) return false;
                 double d1 = stack.top();
                 stack.pop();
                 stack.push(-d1);
@@ -161,7 +161,7 @@ namespace Bot {
             });
 
             Str::addOperator("!", 6, [](std::stack<double> &stack) {
-                if (stack.size() < 1) return false;
+                if (stack.empty()) return false;
                 int64_t d1 = stack.top();
                 stack.pop();
                 if (d1 < 0) return false;
@@ -184,7 +184,7 @@ namespace Bot {
             });
 
             Str::addFunction("sin",6,[](std::stack<double> &stack){
-                if (stack.size() < 1) return false;
+                if (stack.empty()) return false;
                 double out = sin(stack.top());
                 stack.pop();
                 stack.push(out);
@@ -192,7 +192,7 @@ namespace Bot {
             });
 
             Str::addFunction("cos",6,[](std::stack<double> &stack){
-                if (stack.size() < 1) return false;
+                if (stack.empty()) return false;
                 double out = cos(stack.top());
                 stack.pop();
                 stack.push(out);
@@ -200,7 +200,7 @@ namespace Bot {
             });
 
             Str::addFunction("sqrt",6,[](std::stack<double> &stack){
-                if (stack.size() < 1) return false;
+                if (stack.empty()) return false;
                 double d1 = stack.top();
                 stack.pop();
                 stack.push(sqrt(d1));
@@ -208,7 +208,7 @@ namespace Bot {
             });
 
             Str::addFunction("tan",6,[](std::stack<double> &stack){
-                if (stack.size() < 1) return false;
+                if (stack.empty()) return false;
                 double out = tan(stack.top());
                 stack.pop();
                 stack.push(out);
@@ -216,7 +216,7 @@ namespace Bot {
             });
 
             Str::addFunction("ln",6,[](std::stack<double> &stack){
-                if (stack.size() < 1) return false;
+                if (stack.empty()) return false;
                 double out = log(stack.top());
                 stack.pop();
                 stack.push(out);
@@ -233,19 +233,11 @@ namespace Bot {
                 return true;
             });
 
-            Str::addFunction("log2",6,[](std::stack<double> &stack){
-                if (stack.size() < 1) return false;
-                double out = log2(stack.top());
+            Str::addFunction("abs",6,[](std::stack<double> &stack){
+                if (stack.empty()) return false;
+                double d1 = stack.top();
                 stack.pop();
-                stack.push(out);
-                return true;
-            });
-
-            Str::addFunction("log10",6,[](std::stack<double> &stack){
-                if (stack.size() < 1) return false;
-                double out = log10(stack.top());
-                stack.pop();
-                stack.push(out);
+                stack.push(std::abs(d1));
                 return true;
             });
         }
