@@ -7,6 +7,7 @@
 #include "settings.hpp"
 #include "roll_selector.hpp"
 #include "counting_game.hpp"
+#include "voice_handler.hpp"
 
 #include <dpp/dpp.h>
 
@@ -44,8 +45,8 @@ namespace Bot {
 
         std::vector<dpp::slashcommand> tempCommandVector;
         std::vector<call_back> tempCallBackVector;
-
         std::unique_ptr<RollSelector> rollSelector;
+        std::unique_ptr<VoiceHandler> voiceHandler;
     };
 }
 

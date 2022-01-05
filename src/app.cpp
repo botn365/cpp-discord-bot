@@ -10,6 +10,7 @@ namespace Bot {
     void App::run() {
         settings = std::make_unique<Settings>("settings.json");
         rollSelector = std::make_unique<RollSelector>(*settings);
+        voiceHandler = std::make_unique<VoiceHandler>(*this);
 
         uint32_t intents = 0;
         intents += dpp::i_guild_integrations;
@@ -17,6 +18,7 @@ namespace Bot {
         intents += dpp::i_guild_message_reactions;
         intents += dpp::i_guild_message_typing;
         intents += dpp::i_guilds;
+        intents += dpp::i_guild_voice_states;
 
         bot = std::make_unique<dpp::cluster>(settings->getToken(), intents);
         countingGame = std::make_unique<CountingGame>(this);
@@ -51,13 +53,18 @@ namespace Bot {
             rollSelector->onMessageReactionRemove(this, event);
         });
 
+        bot->on_voice_state_update([this](const dpp::voice_state_update_t &event) {
+            voiceHandler->onVoiceStateUpdate(event);
+        });
+
         std::cout << "start bot" << "\n";
         bot->start(false);
     }
 
     void App::registerSettingsModuals(dpp::slashcommand &baseCommand) {
         rollSelector->addSettings(baseCommand, this);
-        countingGame->addSettings(baseCommand,this);
+        countingGame->addSettings(baseCommand, this);
+        voiceHandler->addSettings(baseCommand);
     }
 
     void App::registerSettings(dpp::cluster &bot, Settings &settings) {
@@ -127,14 +134,21 @@ namespace Bot {
                                                            commands.insert(std::pair{tempCom.id, Interaction{tempCom,
                                                                                                              std::move(
                                                                                                                      tempCallBackVector[i])}});
-                                                           std::cout <<"regitert command "<<com.second.name<<"\n";
+                                                           if (com.second.name == "settings") {
+                                                               for (auto &value: com.second.options) {
+                                                                   for (auto &command : value.options) {
+                                                                       std::cout << "regitert command " << value.name << " " << command.name << "\n";
+                                                                   }
+                                                               }
+                                                           }
+                                                           std::cout << "regitert command " << com.second.name << "\n";
                                                        }
                                                    }
                                                }
                                            } else {
                                                throw std::runtime_error("failed to create commands");
                                            }
-                                           std::cout<<"commands registert\n";
+                                           std::cout << "commands registert\n";
                                            tempCommandVector.clear();
                                            tempCallBackVector.clear();
                                        });
