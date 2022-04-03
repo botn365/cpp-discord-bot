@@ -275,10 +275,10 @@ namespace Bot {
             if (std::isinf(value)) return;
             value = std::floor(value);
             bool isCorrect = StringCalculator::floor(value) == ++currentCount;
+            if (isCorrect) lastMessage = message.msg->id;
             auto keySet = players.find(author);
             if (isCorrect && highestCount < currentCount) {
                 highestCount = currentCount;
-                lastMessage = message.msg->id;
             }
             if (keySet != players.end()) {
                 auto type = addCountToPlayer(app, keySet->second, isCorrect);
@@ -382,7 +382,6 @@ namespace Bot {
 
     void CountingGame::onMessageDelete(App *app, const dpp::message_delete_t &event) {
         auto message =  event.deleted;
-        std::cout<<"msg channel id="<<message->channel_id<<" msg id="<<message->id<<" cnl id="<<channelID<<" last msg id"<<lastMessage<<"\n";
         if (message->channel_id == channelID && message->id == lastMessage) {
             std::stringstream ss;
             ss<<"last count message deleted current count is ";
