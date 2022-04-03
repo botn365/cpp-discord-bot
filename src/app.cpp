@@ -57,6 +57,10 @@ namespace Bot {
             voiceHandler->onVoiceStateUpdate(event);
         });
 
+        bot->on_message_delete([this](const dpp::message_delete_t &event){
+            countingGame->onMessageDelete(this,event);
+        });
+
         std::cout << "start bot" << "\n";
         bot->start(false);
     }

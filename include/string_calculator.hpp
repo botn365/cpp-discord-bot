@@ -10,6 +10,7 @@
 #include <utility>
 #include <memory>
 #include <unordered_map>
+#include <string>
 
 
 namespace Bot {

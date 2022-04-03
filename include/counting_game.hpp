@@ -50,6 +50,8 @@ namespace Bot {
 
         void addSettings(dpp::slashcommand &baseCommand, App *app);
 
+        void onMessageDelete(App *app, const dpp::message_delete_t &event);
+
     private:
         void initDataBase(int id);
 
@@ -72,6 +74,7 @@ namespace Bot {
         Player *lastPlayer;
         uint64_t highestCount = 0;
         uint64_t resetCount = 0;
+        uint64_t lastMessage = 0;
         sqlite3 *db;
     };
 }
