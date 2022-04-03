@@ -384,8 +384,8 @@ namespace Bot {
         auto message =  event.deleted;
         if (message->channel_id == channelID && message->id == lastMessage) {
             std::stringstream ss;
-            ss<<"last count message deleted current count is ";
-            ss<<currentCount;
+            ss<<"Last count message deleted. Current count is ";
+            ss<<currentCount<<".";
             app->bot->message_create(dpp::message(channelID,ss.str()));
         }
     }
