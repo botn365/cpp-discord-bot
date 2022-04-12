@@ -32,6 +32,15 @@ namespace Bot {
         constMap.insert(constPair("e", M_E));
         constMap.insert(constPair("g", 9.8));
         constMap.insert(constPair("π", 3));
+        constMap.insert(constPair("een", 1));
+        constMap.insert(constPair("twee", 2));
+        constMap.insert(constPair("drie", 3));
+        constMap.insert(constPair("vier", 4));
+        constMap.insert(constPair("vijf", 5));
+        constMap.insert(constPair("zes", 6));
+        constMap.insert(constPair("zeven", 7));
+        constMap.insert(constPair("acht", 8));
+        constMap.insert(constPair("negen", 9));
     }
 
     std::list<std::unique_ptr<Bot::CountObj>> Bot::StringCalculator::convertStringToRPNList(std::string_view &input) {
