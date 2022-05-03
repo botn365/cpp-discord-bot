@@ -330,7 +330,7 @@ namespace Bot {
                 currentCount = 0;
                 break;
             case Bot::CountingGame::Type::INVALID:
-                app->bot->message_add_reaction(message.msg->id,message.msg->channel_id,":grey_exclamation:");
+                app->bot->message_add_reaction(message.msg->id,message.msg->channel_id,"❕");
                 break;
             case Bot::CountingGame::Type::SAVED:
                 std::stringstream ss;
