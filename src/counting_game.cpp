@@ -249,6 +249,7 @@ namespace Bot {
     void Bot::CountingGame::count(App *app, const dpp::message_create_t &message) {
         if (message.msg->channel_id == channelID) {
             if (!shouldCount(message.msg->content)) {
+                reply(INVALID,app,message,0);
                 return;
             }
             const dpp::snowflake author = message.msg->author->id;
@@ -271,8 +272,10 @@ namespace Bot {
             auto RPNList = StringCalculator::convertStringToRPNList(view);
             if (RPNList.empty()) return;
             double value = StringCalculator::calculateFromRPNList(RPNList);
-            if (std::isnan(value)) return;
-            if (std::isinf(value)) return;
+            if (std::isnan(value) || std::isinf(value)) {
+                reply(INVALID,app,message,0);
+                return;
+            }
             value = std::floor(value);
             bool isCorrect = StringCalculator::floor(value) == ++currentCount;
             if (isCorrect) lastMessage = message.msg->id;
@@ -325,6 +328,9 @@ namespace Bot {
                         "> You already counted. Count reset to 1"
                 ));
                 currentCount = 0;
+                break;
+            case Bot::CountingGame::Type::INVALID:
+                app->bot->message_add_reaction(message.msg->id,message.msg->channel_id,":grey_exclamation:");
                 break;
             case Bot::CountingGame::Type::SAVED:
                 std::stringstream ss;
