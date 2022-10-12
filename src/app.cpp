@@ -24,7 +24,7 @@ namespace Bot {
         countingGame = std::make_unique<CountingGame>(this);
 
         bot->on_message_create([this](const dpp::message_create_t &message) {
-            if (message.msg->author->id == bot->me.id) return;
+            if (message.msg.author.id == bot->me.id) return;
             countingGame->count(this, message);
         });
 
@@ -60,6 +60,8 @@ namespace Bot {
         bot->on_message_delete([this](const dpp::message_delete_t &event){
             countingGame->onMessageDelete(this,event);
         });
+
+        bot->on_message_delete.operator()()
 
         std::cout << "start bot" << "\n";
         bot->start(false);

@@ -247,12 +247,12 @@ namespace Bot {
 
     //calculate and check a message and update game data
     void Bot::CountingGame::count(App *app, const dpp::message_create_t &message) {
-        if (message.msg->channel_id == channelID) {
-            if (!shouldCount(message.msg->content)) {
+        if (message.msg.channel_id == channelID) {
+            if (!shouldCount(message.msg.content)) {
                 reply(INVALID,app,message,0);
                 return;
             }
-            const dpp::snowflake author = message.msg->author->id;
+            const dpp::snowflake author = message.msg.author.id;
             if (currentCount != resetCount && lastPlayer != nullptr && author == lastPlayer->userId) {
                 if (lastPlayer->getSaves() > 0) {
                     lastPlayer->setSaves(lastPlayer->getSaves() - 1);
@@ -268,7 +268,7 @@ namespace Bot {
                 }
                 return;
             }
-            std::string_view view(message.msg->content);
+            std::string_view view(message.msg.content);
             auto RPNList = StringCalculator::convertStringToRPNList(view);
             if (RPNList.empty()) return;
             double value = StringCalculator::calculateFromRPNList(RPNList);
@@ -278,7 +278,7 @@ namespace Bot {
             }
             value = std::floor(value);
             bool isCorrect = StringCalculator::floor(value) == ++currentCount;
-            if (isCorrect) lastMessage = message.msg->id;
+            if (isCorrect) lastMessage = message.msg.id;
             auto keySet = players.find(author);
             if (isCorrect && highestCount < currentCount) {
                 highestCount = currentCount;
@@ -306,37 +306,37 @@ namespace Bot {
         switch (type) {
             case Bot::CountingGame::Type::CORRECT:
                 if (currentCount == highestCount) {
-                    app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "☑");
+                    app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "☑");
                 } else {
-                    app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "✅");
+                    app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "✅");
                 }
                 break;
             case Bot::CountingGame::Type::INCORRECT:
-                app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "❌");
+                app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
                 app->bot->message_create(dpp::message(
-                        message.msg->channel_id,
-                        "<@" + std::to_string(message.msg->author->id) +
+                        message.msg.channel_id,
+                        "<@" + std::to_string(message.msg.author.id) +
                         "> Cant count. Gave Value " + std::to_string(cast) + ". Count reset to 1"
                 ));
                 currentCount = resetCount;
                 break;
             case Bot::CountingGame::Type::SAME_USER:
-                app->bot->message_add_reaction(message.msg->id, message.msg->channel_id, "❌");
+                app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
                 app->bot->message_create(dpp::message(
-                        message.msg->channel_id,
-                        "<@" + std::to_string(message.msg->author->id) +
+                        message.msg.channel_id,
+                        "<@" + std::to_string(message.msg.author.id) +
                         "> You already counted. Count reset to 1"
                 ));
                 currentCount = 0;
                 break;
             case Bot::CountingGame::Type::INVALID:
-                app->bot->message_add_reaction(message.msg->id,message.msg->channel_id,"❕");
+                app->bot->message_add_reaction(message.msg.id,message.msg.channel_id,"❕");
                 break;
             case Bot::CountingGame::Type::SAVED:
                 std::stringstream ss;
                 app->bot->message_create(dpp::message(
-                        message.msg->channel_id,
-                        "<@" + std::to_string(message.msg->author->id) + "> almost lost but got saved. Saves left " +
+                        message.msg.channel_id,
+                        "<@" + std::to_string(message.msg.author.id) + "> almost lost but got saved. Saves left " +
                         std::to_string((uint64_t)value)
                 ));
                 break;

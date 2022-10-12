@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(discord_bot)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17 -werror)
 
 #using this slows down clion fpr me so when developing i like it turned off
 option(USE_SUBDIRECTORY "include dpp trough subdirectory" ON)
@@ -16,7 +16,7 @@ if(DOWNLOAD_LIBS)
     FetchContent_Declare(
             dpp_dw
             GIT_REPOSITORY git@github.com:brainboxdotcc/DPP.git
-            GIT_TAG  fdb61e70b34addd5b522195e7959679385fb1651
+            GIT_TAG  v10.0.20
     )
     FetchContent_GetProperties(dpp_dw)
     if (NOT dpp_dw_POPULATED)
@@ -91,7 +91,7 @@ endif()
 file(GLOB SRC CONFIGURE_DEPENDS "include/*.hpp" "src/*.cpp")
 
 add_executable(${PROJECT_NAME}
-        ${SRC})
+        ${SRC} src/get_harware_stats.cpp include/get_harware_stats.hpp src/server.cpp include/server.hpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${INCLUDE_DPP}
