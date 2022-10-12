@@ -61,8 +61,6 @@ namespace Bot {
             countingGame->onMessageDelete(this,event);
         });
 
-        bot->on_message_delete.operator()()
-
         std::cout << "start bot" << "\n";
         bot->start(false);
     }
