@@ -13,11 +13,11 @@
 
 
 namespace Bot {
-    Bot::CountingGame::CountingGame(App *app, int id) :
+    Bot::CountingGame::CountingGame(Server &server, int id) :
             channelID{0}, currentCount{0}, lastPlayer{nullptr}, id{id} {
-        auto dataBase = initSettings(app);
+        auto dataBase = initSettings(server);
 
-        StringCalculator::init(app->settings->getUnicodeTranslationLocation());
+        StringCalculator::init(server.getApp().getGlobalSettings()->getUnicodeTranslationLocation());
 
         int error = sqlite3_open(dataBase.c_str(), &db);
         if (error) {
@@ -32,8 +32,8 @@ namespace Bot {
         sqlite3_close(db);
     }
 
-    std::string CountingGame::initSettings(App *app) {
-        auto &doc = app->settings->getDocument();
+    std::string CountingGame::initSettings(Server &server) {
+        auto &doc = server.getDocument();
         if (!doc.HasMember("counting")) {
             rapidjson::Value counting;
             counting.SetObject();
@@ -47,7 +47,7 @@ namespace Bot {
             count.AddMember("count_game_db_location", db, doc.GetAllocator());
             std::cout
                     << "no value for counting DB location found in settings. Putting it in default location. ~/CountData.db\n";
-            app->settings->save();
+            server.save();
         }
         return count["count_game_db_location"].GetString();
     }
@@ -246,24 +246,24 @@ namespace Bot {
     }
 
     //calculate and check a message and update game data
-    void Bot::CountingGame::count(App *app, const dpp::message_create_t &message) {
+    void Bot::CountingGame::count(Server &server, const dpp::message_create_t &message) {
         if (message.msg.channel_id == channelID) {
             if (!shouldCount(message.msg.content)) {
-                reply(INVALID,app,message,0);
+                reply(INVALID,server,message,0);
                 return;
             }
             const dpp::snowflake author = message.msg.author.id;
             if (currentCount != resetCount && lastPlayer != nullptr && author == lastPlayer->userId) {
                 if (lastPlayer->getSaves() > 0) {
                     lastPlayer->setSaves(lastPlayer->getSaves() - 1);
-                    reply(SAVED, app, message, lastPlayer->getSaves());
+                    reply(SAVED, server, message, lastPlayer->getSaves());
                     savePlayer(*lastPlayer);
                     return;
                 }
-                reply(CountingGame::Type::SAME_USER, app, message, 0);
+                reply(CountingGame::Type::SAME_USER, server, message, 0);
                 auto keySet = players.find(author);
                 if (keySet != players.end()) {
-                    addCountToPlayer(app, keySet->second, false);
+                    addCountToPlayer(server, keySet->second, false);
                     saveGame();
                 }
                 return;
@@ -273,7 +273,7 @@ namespace Bot {
             if (RPNList.empty()) return;
             double value = StringCalculator::calculateFromRPNList(RPNList);
             if (std::isnan(value) || std::isinf(value)) {
-                reply(INVALID,app,message,0);
+                reply(INVALID,server,message,0);
                 return;
             }
             value = std::floor(value);
@@ -284,15 +284,15 @@ namespace Bot {
                 highestCount = currentCount;
             }
             if (keySet != players.end()) {
-                auto type = addCountToPlayer(app, keySet->second, isCorrect);
-                reply(type, app, message, value);
+                auto type = addCountToPlayer(server, keySet->second, isCorrect);
+                reply(type, server, message, value);
                 if (type == SAVED) currentCount--;
                 saveGame();
                 return;
             } else {
                 auto player = addPlayer(author);
-                auto type = addCountToPlayer(app, player, isCorrect);
-                reply(type, app, message, value);
+                auto type = addCountToPlayer(server, player, isCorrect);
+                reply(type, server, message, value);
                 if (type == SAVED) currentCount--;
                 saveGame();
                 return;
@@ -301,19 +301,19 @@ namespace Bot {
     }
 
     //reply with message depending on type
-    void CountingGame::reply(const Type type, App *app, const dpp::message_create_t &message, double value) {
+    void CountingGame::reply(const Type type, Server &server, const dpp::message_create_t &message, double value) {
         int64_t cast = value;
         switch (type) {
             case Bot::CountingGame::Type::CORRECT:
                 if (currentCount == highestCount) {
-                    app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "☑");
+                    server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "☑");
                 } else {
-                    app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "✅");
+                    server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "✅");
                 }
                 break;
             case Bot::CountingGame::Type::INCORRECT:
-                app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
-                app->bot->message_create(dpp::message(
+                server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
+                server.getBot().message_create(dpp::message(
                         message.msg.channel_id,
                         "<@" + std::to_string(message.msg.author.id) +
                         "> Cant count. Gave Value " + std::to_string(cast) + ". Count reset to 1"
@@ -321,8 +321,8 @@ namespace Bot {
                 currentCount = resetCount;
                 break;
             case Bot::CountingGame::Type::SAME_USER:
-                app->bot->message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
-                app->bot->message_create(dpp::message(
+                server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
+                server.getBot().message_create(dpp::message(
                         message.msg.channel_id,
                         "<@" + std::to_string(message.msg.author.id) +
                         "> You already counted. Count reset to 1"
@@ -330,11 +330,11 @@ namespace Bot {
                 currentCount = 0;
                 break;
             case Bot::CountingGame::Type::INVALID:
-                app->bot->message_add_reaction(message.msg.id,message.msg.channel_id,"❕");
+                server.getBot().message_add_reaction(message.msg.id,message.msg.channel_id,"❕");
                 break;
             case Bot::CountingGame::Type::SAVED:
                 std::stringstream ss;
-                app->bot->message_create(dpp::message(
+                server.getBot().message_create(dpp::message(
                         message.msg.channel_id,
                         "<@" + std::to_string(message.msg.author.id) + "> almost lost but got saved. Saves left " +
                         std::to_string((uint64_t)value)
@@ -344,7 +344,7 @@ namespace Bot {
     }
 
     //handle player data
-    CountingGame::Type CountingGame::addCountToPlayer(App *app, Player &player, bool correct) {
+    CountingGame::Type CountingGame::addCountToPlayer(Server &server, Player &player, bool correct) {
         if (correct) {
             player.incrementCorrectCount();
             player.checkAndSetHighestCount(currentCount);
@@ -360,7 +360,7 @@ namespace Bot {
             player.incrementFailedCount();
             savePlayer(player);
             if (failRollID != 0) {
-                app->bot->guild_member_add_role(app->settings->getServerId(), player.userId, failRollID);
+                server.getBot().guild_member_add_role(server.id(), player.userId, failRollID);
             }
             return INCORRECT;
         }
@@ -386,13 +386,13 @@ namespace Bot {
         return false;
     }
 
-    void CountingGame::onMessageDelete(App *app, const dpp::message_delete_t &event) {
+    void CountingGame::onMessageDelete(Server &server, const dpp::message_delete_t &event) {
         auto message =  event.deleted;
         if (message->channel_id == channelID && message->id == lastMessage) {
             std::stringstream ss;
             ss<<"Last count message deleted. Current count is ";
             ss<<currentCount<<".";
-            app->bot->message_create(dpp::message(channelID,ss.str()));
+            server.getBot().message_create(dpp::message(channelID,ss.str()));
         }
     }
 
@@ -434,7 +434,7 @@ namespace Bot {
         return returnList;
     }
 
-    void CountingGame::addSettings(dpp::slashcommand &baseCommand, App *app) {
+    void CountingGame::addSettings(dpp::slashcommand &baseCommand, Server &server) {
         dpp::command_option command(dpp::co_sub_command_group, "counting", "counting settings");
         {
             dpp::command_option setChannel(dpp::co_sub_command, "set_counting_channel",
@@ -444,7 +444,7 @@ namespace Bot {
                             dpp::co_channel, "channel", "channel where counting happens", true
                     ));
             command.add_option(setChannel);
-            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
 
                 auto value = std::get<dpp::snowflake>(cmd_data.options[0].options[0].options[0].value);
@@ -467,7 +467,7 @@ namespace Bot {
                             dpp::command_option(dpp::co_role, "fail_roll", "leave option out to not give roll")
                     ));
             command.add_option(setFailRoll);
-            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 auto &data = cmd_data.options[0].options[0];
                 std::stringstream ss;
@@ -496,7 +496,7 @@ namespace Bot {
                             dpp::command_option(dpp::co_channel, "bot_channel", "if empty no channel is the bot spam channel")
                     ));
             command.add_option(setFailRoll);
-            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 auto &data = cmd_data.options[0].options[0];
                 std::stringstream ss;
@@ -524,7 +524,7 @@ namespace Bot {
             setSaves.add_option(amount);
             setSaves.add_option(player);
             command.add_option(setSaves);
-            app->registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 auto &data = cmd_data.options[0].options[0];
                 dpp::snowflake userID;
@@ -559,7 +559,7 @@ namespace Bot {
         baseCommand.add_option(command);
     }
 
-    void CountingGame::addCommands(dpp::cluster &bot, Settings &settings, App *app) {
+    void CountingGame::addCommands(dpp::cluster &bot, ServerSettings &settings, Server &server) {
         {
             dpp::slashcommand testNumber;
             std::string nameTestNumber = "test_number";
@@ -574,7 +574,7 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_string, "calculation", "calculation", true
                     ));
-            app->registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 auto input = std::get<std::string>(cmd_data.options[0].value);
                 std::string_view view(input);
@@ -623,7 +623,7 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_integer, "start_pos", "starts pos of listing"
                     ));
-            app->registerCommand(bot, settings, getStats, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerCommand(bot, settings, getStats, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 uint64_t startPos = 0;
                 if (!cmd_data.options.empty()) {
@@ -667,7 +667,7 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_user, "user", "user to get stats from"
                     ));
-            app->registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
                 dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
                 dpp::snowflake user_id;
                 if (!cmd_data.options.empty()) {
@@ -727,7 +727,7 @@ namespace Bot {
             for (auto &com: settings.getCommandPermissions(name)) {
                 command.add_permission(com);
             }
-            app->registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
                 std::stringstream ss;
                 ss << "Server Stats\n";
                 ss << "Current Count = " << currentCount << "\n";
@@ -763,7 +763,7 @@ namespace Bot {
             for (auto &com: settings.getCommandPermissions(name)) {
                 command.add_permission(com);
             }
-            app->registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+            server.getApp().registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
                 std::stringstream ss;
                 ss<<"valid digits\n";
                 for (auto &value : StringCalculator::getNumberMap()) {

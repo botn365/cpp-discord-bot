@@ -2,19 +2,20 @@
 // Created by vanda on 18/10/2021.
 //
 
-#include "../include/settings.hpp"
+#include "../include/server_settings.hpp"
 #include "../include/load_operators.hpp"
+#include "../include/util.hpp"
 
 #include <fstream>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
 namespace Bot {
-    Settings::Settings(std::string file) {
-        auto settings = LoadOperators::iFileToString(file);
+    ServerSettings::ServerSettings(std::string fileString) {
+        auto settings = Bot::Util::iFileToString(fileString);
         doc.Parse(settings.c_str());
         if (doc.HasParseError()) {
-            throw std::runtime_error("failed to parse json");
+            throw std::runtime_error("failed to parse bot json\n CANNOT START BOT");
         }
         bool shouldSave = false;
         if (!doc.HasMember("bot_token")) {
@@ -31,20 +32,13 @@ namespace Bot {
             shouldSave = true;
             std::cout<<"NO SERVER ID FOUND!!! \n";
         }
-        if (!doc.HasMember("unicode_translation")) {
-            rapidjson::Value unicode;
-            unicode.SetString("unicodeToNumber.json");
-            doc.AddMember("unicode_translation",unicode,doc.GetAllocator());
-            shouldSave = true;
-            std::cout<<"No location for name translation file found in settings. Putting it in default location. ~/unicodeToNumber.json\n";
-        }
-        saveLocation = std::move(file);
+        saveLocation = std::move(fileString);
         if (shouldSave) {
             save();
         }
     }
 
-    void Settings::save() {
+    void ServerSettings::save() {
         std::ofstream stream(saveLocation,std::ios::trunc);
         if (stream.is_open()) {
             rapidjson::StringBuffer buffer;
@@ -56,35 +50,23 @@ namespace Bot {
         }
     }
 
-    const char *Settings::getToken() {
+    const char *ServerSettings::getToken() {
         return doc["bot_token"].GetString();
     }
 
-    const char *Settings::getCountDBLocation() {
-        try {
-            return doc["count_game_db_location"].GetString();
-        } catch (std::exception &e) {
-            throw std::runtime_error("db location not found");
-        }
+    const char *ServerSettings::getCountDBLocation() {
+        return doc["count_game_db_location"].GetString();
     }
 
-    const char *Settings::getUnicodeTranslationLocation() {
-        try {
-            return doc["unicode_translation"].GetString();
-        } catch (std::exception &e) {
-            throw std::runtime_error("name translation location not found");
-        }
+    uint64_t ServerSettings::getServerId() {
+        return doc["server_id"].GetUint64();
     }
 
-    const uint64_t Settings::getServerId() {
-        try {
-            return doc["server_id"].GetInt64();
-        } catch (std::exception &e) {
-            throw std::runtime_error("server id not found");
-        }
+    void ServerSettings::setServerID(uint64_t serverId) {
+        doc["server_id"].SetUint64(serverId);
     }
 
-    std::vector<dpp::command_permission> Settings::getCommandPermissions(std::string &commandName) {
+    std::vector<dpp::command_permission> ServerSettings::getCommandPermissions(std::string &commandName) {
         try {
             std::vector<dpp::command_permission> list;
             for (auto &data : doc["slash_commands"].GetArray()) {

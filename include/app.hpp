@@ -4,10 +4,12 @@
 
 #pragma once
 
-#include "settings.hpp"
+#include "server_settings.hpp"
 #include "roll_selector.hpp"
 #include "counting_game.hpp"
 #include "voice_handler.hpp"
+#include "global_settings.hpp"
+#include "server.hpp"
 
 #include <dpp/dpp.h>
 
@@ -22,7 +24,7 @@ namespace Bot {
     public:
         void run();
 
-        void registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
+        void registerCommand(dpp::cluster &bot, ServerSettings &settings, dpp::slashcommand &command,
                              std::function<void(const dpp::interaction_create_t &interaction)> interactionCallBack);
 
         void registerSetting(dpp::slashcommand baseCommand, dpp::command_option &command,
@@ -31,22 +33,24 @@ namespace Bot {
 
         void registerSettingsModuals(dpp::slashcommand &baseCommand);
 
+        GlobalSettings * getGlobalSettings() const { return globalSettings.get();}
+
+        void loadServers();
+
         std::unordered_map<uint64_t, Interaction> commands;
         std::unordered_map<std::string, call_back> settingCallBacks;
         std::unique_ptr<dpp::cluster> bot;
-        std::unique_ptr<Settings> settings;
-        std::unique_ptr<CountingGame> countingGame;
 
     private:
 
-        void registerSettings(dpp::cluster &bot, Bot::Settings &settings);
+        void registerSettings(dpp::cluster &bot, Bot::ServerSettings &settings);
 
         void batchUploadCommands();
 
+        std::vector<Server> servers;
+        std::unique_ptr<GlobalSettings> globalSettings;
         std::vector<dpp::slashcommand> tempCommandVector;
         std::vector<call_back> tempCallBackVector;
-        std::unique_ptr<RollSelector> rollSelector;
-        std::unique_ptr<VoiceHandler> voiceHandler;
     };
 }
 

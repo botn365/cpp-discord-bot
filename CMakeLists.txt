@@ -91,7 +91,7 @@ endif()
 file(GLOB SRC CONFIGURE_DEPENDS "include/*.hpp" "src/*.cpp")
 
 add_executable(${PROJECT_NAME}
-        ${SRC} src/get_harware_stats.cpp include/get_harware_stats.hpp src/server.cpp include/server.hpp)
+        ${SRC} src/get_harware_stats.cpp include/get_harware_stats.hpp src/server.cpp include/server.hpp src/global_settings.cpp include/global_settings.hpp include/util.hpp src/database.cpp include/database.hpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${INCLUDE_DPP}

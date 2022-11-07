@@ -4,7 +4,8 @@
 #pragma once
 
 #include "player.hpp"
-#include "settings.hpp"
+#include "server_settings.hpp"
+#include "server.hpp"
 #include <dpp/dpp.h>
 #include <sqlite3.h>
 
@@ -24,13 +25,13 @@ namespace Bot {
             SAVED
         };
 
-        CountingGame(App *app, int id = 0);
+        CountingGame(Server &server, int id = 0);
 
         ~CountingGame();
 
-        void count(App *app, const dpp::message_create_t &message);
+        void count(Server &server, const dpp::message_create_t &message);
 
-        void reply(const Type type, App *app, const dpp::message_create_t &message, double value);
+        void reply(const Type type, Server &server, const dpp::message_create_t &message, double value);
 
         dpp::snowflake getCountChannel() const;
 
@@ -46,11 +47,11 @@ namespace Bot {
 
         void saveGame();
 
-        void addCommands(dpp::cluster &bot, Settings &settings, App *app);
+        void addCommands(dpp::cluster &bot, ServerSettings &settings, Server &server);
 
-        void addSettings(dpp::slashcommand &baseCommand, App *app);
+        void addSettings(dpp::slashcommand &baseCommand, Server &server);
 
-        void onMessageDelete(App *app, const dpp::message_delete_t &event);
+        void onMessageDelete(Server &server, const dpp::message_delete_t &event);
 
     private:
         void initDataBase(int id);
@@ -61,9 +62,9 @@ namespace Bot {
 
         void addExtraTables();
 
-        std::string initSettings(App *app);
+        std::string initSettings(Server &server);
 
-        Type addCountToPlayer(App *bot,Player &player, bool correct);
+        Type addCountToPlayer(Server &server,Player &player, bool correct);
 
         std::unordered_map<dpp::snowflake, Player> players;
         int id;

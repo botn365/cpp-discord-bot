@@ -6,7 +6,7 @@
 
 
 #include "dpp/dpp.h"
-#include "settings.hpp"
+#include "server_settings.hpp"
 
 
 namespace Bot {

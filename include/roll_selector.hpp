@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "settings.hpp"
+#include "server_settings.hpp"
 
 #include <utility>
 #include <vector>
@@ -37,7 +37,7 @@ namespace Bot {
             Emote emote;
         };
 
-        explicit RollSelector(Settings &settings);
+        explicit RollSelector(ServerSettings &settings);
 
         void addSettings(dpp::slashcommand &baseCommand, App *app);
 

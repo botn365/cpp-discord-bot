@@ -8,9 +8,8 @@
 namespace Bot {
 
     void App::run() {
-        settings = std::make_unique<Settings>("settings.json");
-        rollSelector = std::make_unique<RollSelector>(*settings);
-        voiceHandler = std::make_unique<VoiceHandler>(*this);
+
+        globalSettings = std::make_unique<GlobalSettings>("settings.json");
 
         uint32_t intents = 0;
         intents += dpp::i_guild_integrations;
@@ -20,8 +19,8 @@ namespace Bot {
         intents += dpp::i_guilds;
         intents += dpp::i_guild_voice_states;
 
-        bot = std::make_unique<dpp::cluster>(settings->getToken(), intents);
-        countingGame = std::make_unique<CountingGame>(this);
+        bot = std::make_unique<dpp::cluster>(globalSettings->getToken(), intents);
+        loadServers();
 
         bot->on_message_create([this](const dpp::message_create_t &message) {
             if (message.msg.author.id == bot->me.id) return;
@@ -42,7 +41,6 @@ namespace Bot {
             this->registerSettings(*bot, *settings);
             countingGame->addCommands(*bot, *settings, this);
             batchUploadCommands();
-            std::cout << "bot ready" << "\n";
         });
 
         bot->on_message_reaction_add([this](const dpp::message_reaction_add_t &event) {
@@ -71,7 +69,7 @@ namespace Bot {
         voiceHandler->addSettings(baseCommand);
     }
 
-    void App::registerSettings(dpp::cluster &bot, Settings &settings) {
+    void App::registerSettings(dpp::cluster &bot, ServerSettings &settings) {
         dpp::slashcommand baseCommand;
         std::string name = "settings";
         baseCommand.set_name(name);
@@ -106,6 +104,16 @@ namespace Bot {
         });
     }
 
+    void App::loadServers() {
+        for (auto &server : globalSettings->getServers()) {
+            servers.emplace_back(server,*this->bot);
+        }
+
+        for (auto &server : servers) {
+            server.registerCallbacks();
+        }
+    }
+
     using call_back = std::function<void(const dpp::interaction_create_t &)>;
 
     void App::registerSetting(dpp::slashcommand baseCommand, dpp::command_option &command, call_back callBack,
@@ -118,7 +126,7 @@ namespace Bot {
         }
     }
 
-    void App::registerCommand(dpp::cluster &bot, Settings &settings, dpp::slashcommand &command,
+    void App::registerCommand(dpp::cluster &bot, ServerSettings &settings, dpp::slashcommand &command,
                               std::function<void(
                                       const dpp::interaction_create_t &interaction)> interactionCallBack) {
         tempCommandVector.push_back(command);
@@ -152,7 +160,7 @@ namespace Bot {
                                            } else {
                                                throw std::runtime_error("failed to create commands");
                                            }
-                                           std::cout << "commands registert\n";
+                                           std::cout << "commands registert\nBot Ready\n";
                                            tempCommandVector.clear();
                                            tempCallBackVector.clear();
                                        });

@@ -10,18 +10,18 @@
 #include <rapidjson/document.h>
 
 namespace Bot {
-    class Settings {
+    class ServerSettings {
     public:
 
-        Settings(std::string file);
+        ServerSettings(std::string fileString);
 
         const char *getToken();
 
         const char *getCountDBLocation();
 
-        const char *getUnicodeTranslationLocation();
+        uint64_t getServerId();
 
-        const uint64_t getServerId();
+        void setServerID(uint64_t);
 
         void save();
 

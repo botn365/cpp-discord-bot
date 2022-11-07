@@ -46,7 +46,7 @@ namespace Bot {
     }
 
 
-    RollSelector::RollSelector(Settings &settings) {
+    RollSelector::RollSelector(ServerSettings &settings) {
         auto &doc = settings.getDocument();
         if (doc.HasMember("roll_settings")) {
             for (auto &value: doc["roll_settings"].GetArray()) {
