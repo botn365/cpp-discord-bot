@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(discord_bot)
 
-set(CMAKE_CXX_STANDARD 17 -werror)
+set(CMAKE_CXX_STANDARD 20)
 
 #using this slows down clion fpr me so when developing i like it turned off
 option(USE_SUBDIRECTORY "include dpp trough subdirectory" ON)
@@ -10,7 +10,6 @@ option(DOWNLOAD_LIBS "if it should download libs" ON)
 #download libs
 if(DOWNLOAD_LIBS)
     include(FetchContent)
-
 
     #dpp
     FetchContent_Declare(
@@ -43,6 +42,19 @@ if(DOWNLOAD_LIBS)
 
 
     #sqlite
+#    FetchContent_Declare(
+#            sqlitecpp
+#            GIT_REPOSITORY https://github.com/SRombauts/SQLiteCpp
+#            GIT_TAG  3.2.0
+#    )
+#    FetchContent_GetProperties(sqlitecpp)
+#    if (NOT sqlitecpp_POPULATED)
+#        FetchContent_Populate(sqlitecpp)
+#    endif ()
+#    add_subdirectory(${sqlitecpp_SOURCE_DIR})
+
+
+
     set(CMAKE_TLS_VERIFY true)
     FetchContent_Declare(
             sqlite_dw
@@ -90,8 +102,7 @@ endif()
 
 file(GLOB SRC CONFIGURE_DEPENDS "include/*.hpp" "src/*.cpp")
 
-add_executable(${PROJECT_NAME}
-        ${SRC} src/get_harware_stats.cpp include/get_harware_stats.hpp src/server.cpp include/server.hpp src/global_settings.cpp include/global_settings.hpp include/util.hpp src/database.cpp include/database.hpp)
+add_executable(${PROJECT_NAME} ${SRC} src/util.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${INCLUDE_DPP}
@@ -120,4 +131,3 @@ if (NOT UNIX)
     configure_file("${DPP_LIBS_FOLDER}/libsodium.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
     configure_file("${DPP_LIBS_FOLDER}/opus.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" COPYONLY)
 endif()
-

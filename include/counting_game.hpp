@@ -1,18 +1,18 @@
 //
 // Created by vanda on 04/10/2021.
 //
+
 #pragma once
 
 #include "player.hpp"
 #include "server_settings.hpp"
-#include "server.hpp"
+#include "database.hpp"
 #include <dpp/dpp.h>
-#include <sqlite3.h>
-
 
 namespace Bot {
 
     class App;
+    class Server;
 
     class CountingGame {
 
@@ -26,8 +26,6 @@ namespace Bot {
         };
 
         CountingGame(Server &server, int id = 0);
-
-        ~CountingGame();
 
         void count(Server &server, const dpp::message_create_t &message);
 
@@ -56,6 +54,8 @@ namespace Bot {
     private:
         void initDataBase(int id);
 
+        void initTable(const std::string &tableName);
+
         static int populateHashSet(void *countGamePtr, int entries, char **value, char **colName);
 
         static int setServerValues(void *countGamePtr, int entries, char **value, char **colName);
@@ -76,7 +76,7 @@ namespace Bot {
         uint64_t highestCount = 0;
         uint64_t resetCount = 0;
         uint64_t lastMessage = 0;
-        sqlite3 *db;
+        std::unique_ptr<Sqlitepp::Database>  db;
     };
 }
 

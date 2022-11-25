@@ -4,12 +4,13 @@
 
 #include "../include/counting_game.hpp"
 #include "../include/string_calculator.hpp"
-#include "../include/app.hpp"
+//#include "app.cpp"
 
 #include <sstream>
 #include <string>
 #include <cmath>
 #include <iomanip>
+#include <sqlite3.h>
 
 
 namespace Bot {
@@ -17,19 +18,10 @@ namespace Bot {
             channelID{0}, currentCount{0}, lastPlayer{nullptr}, id{id} {
         auto dataBase = initSettings(server);
 
-        StringCalculator::init(server.getApp().getGlobalSettings()->getUnicodeTranslationLocation());
-
-        int error = sqlite3_open(dataBase.c_str(), &db);
-        if (error) {
-            std::cout << "failed to open dataBase" << sqlite3_errmsg(db) << "\n";
-            sqlite3_close(db);
-            throw std::runtime_error("failed to open dataBase");
-        }
+        //StringCalculator::init(server.getApp().getGlobalSettings().getUnicodeTranslationLocation());
+        db = std::make_unique<Sqlitepp::Database>(dataBase);
+        if (db)
         initDataBase(id);
-    }
-
-    CountingGame::~CountingGame() {
-        sqlite3_close(db);
     }
 
     std::string CountingGame::initSettings(Server &server) {
@@ -53,14 +45,21 @@ namespace Bot {
     }
 
     void CountingGame::initDataBase(int id) {
+        if(!db->tableExists("PLAYER"))
+        {
+            db->exec("CREATE TABLE PLAYER("
+                     "SNOWFLAKE INT PRIMARY KEY NOT NULL,"
+                     "TOTAL_CORRECT INT NOT NULL,"
+                     "TOTAL_FAILED INT NOT NULL,"
+                     "HIGHEST_COUNT INT NOT NULL);");
+        }
+
+        int error;
         char *msgError;
-        int error = sqlite3_exec(db,
-                                 "CREATE TABLE PLAYER("
-                                 "SNOWFLAKE INT PRIMARY KEY NOT NULL,"
-                                 "TOTAL_CORRECT INT NOT NULL,"
-                                 "TOTAL_FAILED INT NOT NULL,"
-                                 "HIGHEST_COUNT INT NOT NULL);",
-                                 NULL, 0, &msgError);
+
+
+
+
         if (error !=
             SQLITE_OK) { //if it erros that should mean the table already exists so then pull data from db to memory
             sqlite3_free(msgError);
@@ -105,6 +104,12 @@ namespace Bot {
             }
         }
         addExtraTables();
+    }
+
+    void CountingGame::initTable(const std::string &tableName) {
+        if(!db->tableExists(tableName)) {
+            db->exec("");
+        }
     }
 
     //sqlite has no way to check if a table exists
@@ -201,11 +206,11 @@ namespace Bot {
         ss << "WHERE SNOWFLAKE = " << player.userId << ";";
 
         char *errmsg;
-        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
-        if (ec != SQLITE_OK) {
-            std::cout << "failed to save player " << errmsg << "\n";
-            sqlite3_free(errmsg);
-        }
+//        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
+//        if (ec != SQLITE_OK) {
+//            std::cout << "failed to save player " << errmsg << "\n";
+//            sqlite3_free(errmsg);
+//        }
     }
 
     //save the game data back to the db
@@ -223,11 +228,11 @@ namespace Bot {
         }
         ss << ";";
         char *errmsg;
-        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
-        if (ec != SQLITE_OK) {
-            std::cout << "failed to save game " << errmsg << "\n";
-            sqlite3_free(errmsg);
-        }
+//        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
+//        if (ec != SQLITE_OK) {
+//            std::cout << "failed to save game " << errmsg << "\n";
+//            sqlite3_free(errmsg);
+//        }
     }
 
     //add new player entry to the db and hashtable
@@ -237,11 +242,11 @@ namespace Bot {
         ss << "INSERT INTO PLAYER VALUES (" << id << "," << 0 << "," << 0 << "," << 0 << ","<< 0 <<");";
 
         char *errmsg;
-        int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
-        if (ec != SQLITE_OK) {
-            std::cout << "failed to add player to DB " << errmsg << "\n";
-            sqlite3_free(errmsg);
-        }
+        //int ec = sqlite3_exec(db, ss.str().c_str(), NULL, NULL, &errmsg);
+//        if (ec != SQLITE_OK) {
+//            std::cout << "failed to add player to DB " << errmsg << "\n";
+//            sqlite3_free(errmsg);
+//        }
         return value.first->second;
     }
 
@@ -302,68 +307,68 @@ namespace Bot {
 
     //reply with message depending on type
     void CountingGame::reply(const Type type, Server &server, const dpp::message_create_t &message, double value) {
-        int64_t cast = value;
-        switch (type) {
-            case Bot::CountingGame::Type::CORRECT:
-                if (currentCount == highestCount) {
-                    server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "☑");
-                } else {
-                    server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "✅");
-                }
-                break;
-            case Bot::CountingGame::Type::INCORRECT:
-                server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
-                server.getBot().message_create(dpp::message(
-                        message.msg.channel_id,
-                        "<@" + std::to_string(message.msg.author.id) +
-                        "> Cant count. Gave Value " + std::to_string(cast) + ". Count reset to 1"
-                ));
-                currentCount = resetCount;
-                break;
-            case Bot::CountingGame::Type::SAME_USER:
-                server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
-                server.getBot().message_create(dpp::message(
-                        message.msg.channel_id,
-                        "<@" + std::to_string(message.msg.author.id) +
-                        "> You already counted. Count reset to 1"
-                ));
-                currentCount = 0;
-                break;
-            case Bot::CountingGame::Type::INVALID:
-                server.getBot().message_add_reaction(message.msg.id,message.msg.channel_id,"❕");
-                break;
-            case Bot::CountingGame::Type::SAVED:
-                std::stringstream ss;
-                server.getBot().message_create(dpp::message(
-                        message.msg.channel_id,
-                        "<@" + std::to_string(message.msg.author.id) + "> almost lost but got saved. Saves left " +
-                        std::to_string((uint64_t)value)
-                ));
-                break;
-        }
+//        int64_t cast = value;
+//        switch (type) {
+//            case Bot::CountingGame::Type::CORRECT:
+//                if (currentCount == highestCount) {
+//                    server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "☑");
+//                } else {
+//                    server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "✅");
+//                }
+//                break;
+//            case Bot::CountingGame::Type::INCORRECT:
+//                server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
+//                server.getBot().message_create(dpp::message(
+//                        message.msg.channel_id,
+//                        "<@" + std::to_string(message.msg.author.id) +
+//                        "> Cant count. Gave Value " + std::to_string(cast) + ". Count reset to 1"
+//                ));
+//                currentCount = resetCount;
+//                break;
+//            case Bot::CountingGame::Type::SAME_USER:
+//                server.getBot().message_add_reaction(message.msg.id, message.msg.channel_id, "❌");
+//                server.getBot().message_create(dpp::message(
+//                        message.msg.channel_id,
+//                        "<@" + std::to_string(message.msg.author.id) +
+//                        "> You already counted. Count reset to 1"
+//                ));
+//                currentCount = 0;
+//                break;
+//            case Bot::CountingGame::Type::INVALID:
+//                server.getBot().message_add_reaction(message.msg.id,message.msg.channel_id,"❕");
+//                break;
+//            case Bot::CountingGame::Type::SAVED:
+//                std::stringstream ss;
+//                server.getBot().message_create(dpp::message(
+//                        message.msg.channel_id,
+//                        "<@" + std::to_string(message.msg.author.id) + "> almost lost but got saved. Saves left " +
+//                        std::to_string((uint64_t)value)
+//                ));
+//                break;
+//        }
     }
 
     //handle player data
     CountingGame::Type CountingGame::addCountToPlayer(Server &server, Player &player, bool correct) {
-        if (correct) {
-            player.incrementCorrectCount();
-            player.checkAndSetHighestCount(currentCount);
-            lastPlayer = &player;
-            savePlayer(player);
-            return CORRECT;
-        } else {
-            if (player.getSaves() > 0) {
-                player.setSaves(player.getSaves() - 1);
-                savePlayer(player);
-                return SAVED;
-            }
-            player.incrementFailedCount();
-            savePlayer(player);
-            if (failRollID != 0) {
-                server.getBot().guild_member_add_role(server.id(), player.userId, failRollID);
-            }
-            return INCORRECT;
-        }
+//        if (correct) {
+//            player.incrementCorrectCount();
+//            player.checkAndSetHighestCount(currentCount);
+//            lastPlayer = &player;
+//            savePlayer(player);
+//            return CORRECT;
+//        } else {
+//            if (player.getSaves() > 0) {
+//                player.setSaves(player.getSaves() - 1);
+//                savePlayer(player);
+//                return SAVED;
+//            }
+//            player.incrementFailedCount();
+//            savePlayer(player);
+//            if (failRollID !=(uint64_t) 0) {
+//                server.getBot().guild_member_add_role(server.id(), player.userId, failRollID);
+//            }
+//            return INCORRECT;
+//        }
     }
 
     //a check if the message should be calculated
@@ -392,7 +397,7 @@ namespace Bot {
             std::stringstream ss;
             ss<<"Last count message deleted. Current count is ";
             ss<<currentCount<<".";
-            server.getBot().message_create(dpp::message(channelID,ss.str()));
+            //server.getBot().message_create(dpp::message(channelID,ss.str()));
         }
     }
 
@@ -444,19 +449,19 @@ namespace Bot {
                             dpp::co_channel, "channel", "channel where counting happens", true
                     ));
             command.add_option(setChannel);
-            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-
-                auto value = std::get<dpp::snowflake>(cmd_data.options[0].options[0].options[0].value);
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(
-                                                  "<#" + std::to_string(value) + "> has been set as counting channel")
-                );
-                setCountChannel(value);
-            }, 0);
+//            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+//                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+//
+//                auto value = std::get<dpp::snowflake>(cmd_data.options[0].options[0].options[0].value);
+//                interaction.reply(dpp::ir_channel_message_with_source,
+//                                  dpp::message()
+//                                          .set_type(dpp::mt_reply)
+//                                          .set_flags(dpp::m_ephemeral)
+//                                          .set_content(
+//                                                  "<#" + std::to_string(value) + "> has been set as counting channel")
+//                );
+//                setCountChannel(value);
+//            }, 0);
         }
 
         {
@@ -467,25 +472,25 @@ namespace Bot {
                             dpp::command_option(dpp::co_role, "fail_roll", "leave option out to not give roll")
                     ));
             command.add_option(setFailRoll);
-            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-                auto &data = cmd_data.options[0].options[0];
-                std::stringstream ss;
-                if (!data.options.empty()) {
-                    auto value = std::get<dpp::snowflake>(data.options[0].value);
-                    failRollID = value;
-                    ss << "Fail Roll has been set to <@&" << failRollID << ">";
-                } else {
-                    failRollID = 0;
-                    ss << "Fail Roll has been reset and no roll will be given on fail";
-                }
-                saveGame();
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(ss.str()));
-            }, 1);
+//            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+//                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+//                auto &data = cmd_data.options[0].options[0];
+//                std::stringstream ss;
+//                if (!data.options.empty()) {
+//                    auto value = std::get<dpp::snowflake>(data.options[0].value);
+//                    failRollID = value;
+//                    ss << "Fail Roll has been set to <@&" << failRollID << ">";
+//                } else {
+//                    failRollID = 0;
+//                    ss << "Fail Roll has been reset and no roll will be given on fail";
+//                }
+//                saveGame();
+//                interaction.reply(dpp::ir_channel_message_with_source,
+//                                  dpp::message()
+//                                          .set_type(dpp::mt_reply)
+//                                          .set_flags(dpp::m_ephemeral)
+//                                          .set_content(ss.str()));
+//            }, 1);
         }
 
         {
@@ -496,25 +501,25 @@ namespace Bot {
                             dpp::command_option(dpp::co_channel, "bot_channel", "if empty no channel is the bot spam channel")
                     ));
             command.add_option(setFailRoll);
-            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-                auto &data = cmd_data.options[0].options[0];
-                std::stringstream ss;
-                if (!data.options.empty()) {
-                    auto value = std::get<dpp::snowflake>(data.options[0].value);
-                    botSpam = value;
-                    ss << "bot spam channel set to <#" << botSpam << ">";
-                } else {
-                    botSpam = 0;
-                    ss << "no channel for bot spam";
-                }
-                saveGame();
-                interaction.reply(dpp::ir_channel_message_with_source,
-                                  dpp::message()
-                                          .set_type(dpp::mt_reply)
-                                          .set_flags(dpp::m_ephemeral)
-                                          .set_content(ss.str()));
-            }, 2);
+//            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+//                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+//                auto &data = cmd_data.options[0].options[0];
+//                std::stringstream ss;
+//                if (!data.options.empty()) {
+//                    auto value = std::get<dpp::snowflake>(data.options[0].value);
+//                    botSpam = value;
+//                    ss << "bot spam channel set to <#" << botSpam << ">";
+//                } else {
+//                    botSpam = 0;
+//                    ss << "no channel for bot spam";
+//                }
+//                saveGame();
+//                interaction.reply(dpp::ir_channel_message_with_source,
+//                                  dpp::message()
+//                                          .set_type(dpp::mt_reply)
+//                                          .set_flags(dpp::m_ephemeral)
+//                                          .set_content(ss.str()));
+//            }, 2);
         }
 
         {
@@ -524,36 +529,36 @@ namespace Bot {
             setSaves.add_option(amount);
             setSaves.add_option(player);
             command.add_option(setSaves);
-            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-                auto &data = cmd_data.options[0].options[0];
-                dpp::snowflake userID;
-                uint64_t amount;
-                if (data.options.size()==1) {
-                    amount = std::get<int64_t>(data.options[0].value);
-                    userID = interaction.command.usr.id;
-                } else {
-                    if (data.options[0].name == "amount") {
-                        amount = std::get<int64_t>(data.options[0].value);
-                        userID = std::get<dpp::snowflake>(data.options[1].value);
-                    } else {
-                        userID = std::get<dpp::snowflake>(data.options[0].value);
-                        amount = std::get<int64_t>(data.options[1].value);
-                    }
-                }
-                if (amount < 0) amount = 0;
-                std::stringstream ss;
-                auto player = players.find(userID);
-                if (player != players.end()) {
-                    player->second.setSaves(amount);
-                    ss<<"User <@"<<userID<<"> Saves has been set to "<<amount;
-                } else {
-                    ss<<"User <@"<<userID<<"> Was not found in the player list";
-                }
-                interaction.reply(dpp::ir_channel_message_with_source,dpp::message()
-                .set_type(dpp::mt_reply).set_flags(dpp::m_ephemeral)
-                .set_content(ss.str()));
-            }, 3);
+//            server.getApp().registerSetting(baseCommand, command, [this](const dpp::interaction_create_t &interaction) {
+//                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+//                auto &data = cmd_data.options[0].options[0];
+//                dpp::snowflake userID;
+//                uint64_t amount;
+//                if (data.options.size()==1) {
+//                    amount = std::get<int64_t>(data.options[0].value);
+//                    userID = interaction.command.usr.id;
+//                } else {
+//                    if (data.options[0].name == "amount") {
+//                        amount = std::get<int64_t>(data.options[0].value);
+//                        userID = std::get<dpp::snowflake>(data.options[1].value);
+//                    } else {
+//                        userID = std::get<dpp::snowflake>(data.options[0].value);
+//                        amount = std::get<int64_t>(data.options[1].value);
+//                    }
+//                }
+//                if (amount < 0) amount = 0;
+//                std::stringstream ss;
+//                auto player = players.find(userID);
+//                if (player != players.end()) {
+//                    player->second.setSaves(amount);
+//                    ss<<"User <@"<<userID<<"> Saves has been set to "<<amount;
+//                } else {
+//                    ss<<"User <@"<<userID<<"> Was not found in the player list";
+//                }
+//                interaction.reply(dpp::ir_channel_message_with_source,dpp::message()
+//                .set_type(dpp::mt_reply).set_flags(dpp::m_ephemeral)
+//                .set_content(ss.str()));
+//            }, 3);
         }
 
         baseCommand.add_option(command);
@@ -574,39 +579,39 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_string, "calculation", "calculation", true
                     ));
-            server.getApp().registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-                auto input = std::get<std::string>(cmd_data.options[0].value);
-                std::string_view view(input);
-                auto list = Bot::StringCalculator::convertStringToRPNList(view);
-                double value = Bot::StringCalculator::calculateFromRPNList(list);
-                std::stringstream ss;
-                ss << "value = " << value << "\n";
-                ss << "RPN stacktrace" << "\n";
-                for (auto &count: list) {
-                    if (count->isOperator()) {
-                        Operator *op = (Operator *) count.get();
-                        ss << op->name << "\n";
-                    } else {
-                        Number *num = (Number *) count.get();
-                        ss << num->value << "\n";
-                    }
-                }
-                if (interaction.command.channel_id == botSpam) {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_content(ss.str())
-                    );
-                } else {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_flags(dpp::m_ephemeral)
-                                              .set_content(ss.str())
-                    );
-                }
-            });
+//            server.getApp().registerCommand(bot, settings, testNumber, [this](const dpp::interaction_create_t &interaction) {
+//                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+//                auto input = std::get<std::string>(cmd_data.options[0].value);
+//                std::string_view view(input);
+//                auto list = Bot::StringCalculator::convertStringToRPNList(view);
+//                double value = Bot::StringCalculator::calculateFromRPNList(list);
+//                std::stringstream ss;
+//                ss << "value = " << value << "\n";
+//                ss << "RPN stacktrace" << "\n";
+//                for (auto &count: list) {
+//                    if (count->isOperator()) {
+//                        Operator *op = (Operator *) count.get();
+//                        ss << op->name << "\n";
+//                    } else {
+//                        Number *num = (Number *) count.get();
+//                        ss << num->value << "\n";
+//                    }
+//                }
+//                if (interaction.command.channel_id == botSpam) {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_content(ss.str())
+//                    );
+//                } else {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_flags(dpp::m_ephemeral)
+//                                              .set_content(ss.str())
+//                    );
+//                }
+//            });
         }
 
         {
@@ -623,34 +628,34 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_integer, "start_pos", "starts pos of listing"
                     ));
-            server.getApp().registerCommand(bot, settings, getStats, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-                uint64_t startPos = 0;
-                if (!cmd_data.options.empty()) {
-                    startPos = std::get<int64_t>(cmd_data.options[0].value);
-                }
-                auto players = getRankedPlayers(10, startPos);
-                std::stringstream ss;
-                ss << "Ranking from pos " << startPos << "\n";
-                int i = 0;
-                for (auto &player: players) {
-                    ss << "#" << i++ << " <@" << player->userId << ">, " << player->getHighestCount() << "\n";
-                }
-                if (interaction.command.channel_id == botSpam) {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_content(ss.str())
-                    );
-                } else {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_flags(dpp::m_ephemeral)
-                                              .set_content(ss.str())
-                    );
-                }
-            });
+//            server.getApp().registerCommand(bot, settings, getStats, [this](const dpp::interaction_create_t &interaction) {
+//                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+//                uint64_t startPos = 0;
+//                if (!cmd_data.options.empty()) {
+//                    startPos = std::get<int64_t>(cmd_data.options[0].value);
+//                }
+//                auto players = getRankedPlayers(10, startPos);
+//                std::stringstream ss;
+//                ss << "Ranking from pos " << startPos << "\n";
+//                int i = 0;
+//                for (auto &player: players) {
+//                    ss << "#" << i++ << " <@" << player->userId << ">, " << player->getHighestCount() << "\n";
+//                }
+//                if (interaction.command.channel_id == botSpam) {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_content(ss.str())
+//                    );
+//                } else {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_flags(dpp::m_ephemeral)
+//                                              .set_content(ss.str())
+//                    );
+//                }
+//            });
         }
 
         {
@@ -667,55 +672,55 @@ namespace Bot {
                     dpp::command_option(
                             dpp::co_user, "user", "user to get stats from"
                     ));
-            server.getApp().registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
-                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
-                dpp::snowflake user_id;
-                if (!cmd_data.options.empty()) {
-                    user_id = std::get<dpp::snowflake>(cmd_data.options[0].value);
-                } else {
-                    user_id = interaction.command.usr.id;
-                }
-                auto userPair = players.find(user_id);
-                if (userPair != players.end()) {
-                    auto &user = userPair->second;
-                    std::stringstream ss;
-                    ss << "<@" << user_id << "> Stats.\n";
-                    ss << "Highest Count = " << user.getHighestCount() << "\n";
-                    ss << "Success Rate = " << std::setprecision(3) << user.getSuccessRate() << "\n";
-                    ss << "Total Count = " << user.getTotalCount() << "\n";
-                    ss << "Total Correct = " << user.getCorectCount() << "\n";
-                    ss << "Total Failed = " << user.getFailedCount() << "\n";
-                    if (interaction.command.channel_id == botSpam) {
-                        interaction.reply(dpp::ir_channel_message_with_source,
-                                          dpp::message()
-                                                  .set_type(dpp::mt_reply)
-                                                  .set_content(ss.str())
-                        );
-                    } else {
-                        interaction.reply(dpp::ir_channel_message_with_source,
-                                          dpp::message()
-                                                  .set_type(dpp::mt_reply)
-                                                  .set_flags(dpp::m_ephemeral)
-                                                  .set_content(ss.str())
-                        );
-                    }
-                } else {
-                    if (interaction.command.channel_id == botSpam) {
-                        interaction.reply(dpp::ir_channel_message_with_source,
-                                          dpp::message()
-                                                  .set_type(dpp::mt_reply)
-                                                  .set_content("User Not Found")
-                        );
-                    } else {
-                        interaction.reply(dpp::ir_channel_message_with_source,
-                                          dpp::message()
-                                                  .set_type(dpp::mt_reply)
-                                                  .set_flags(dpp::m_ephemeral)
-                                                  .set_content("User Not Found")
-                        );
-                    }
-                }
-            });
+//            server.getApp().registerCommand(bot, settings, getPlayerStats, [this](const dpp::interaction_create_t &interaction) {
+//                dpp::command_interaction cmd_data = std::get<dpp::command_interaction>(interaction.command.data);
+//                dpp::snowflake user_id;
+//                if (!cmd_data.options.empty()) {
+//                    user_id = std::get<dpp::snowflake>(cmd_data.options[0].value);
+//                } else {
+//                    user_id = interaction.command.usr.id;
+//                }
+//                auto userPair = players.find(user_id);
+//                if (userPair != players.end()) {
+//                    auto &user = userPair->second;
+//                    std::stringstream ss;
+//                    ss << "<@" << user_id << "> Stats.\n";
+//                    ss << "Highest Count = " << user.getHighestCount() << "\n";
+//                    ss << "Success Rate = " << std::setprecision(3) << user.getSuccessRate() << "\n";
+//                    ss << "Total Count = " << user.getTotalCount() << "\n";
+//                    ss << "Total Correct = " << user.getCorectCount() << "\n";
+//                    ss << "Total Failed = " << user.getFailedCount() << "\n";
+//                    if (interaction.command.channel_id == botSpam) {
+//                        interaction.reply(dpp::ir_channel_message_with_source,
+//                                          dpp::message()
+//                                                  .set_type(dpp::mt_reply)
+//                                                  .set_content(ss.str())
+//                        );
+//                    } else {
+//                        interaction.reply(dpp::ir_channel_message_with_source,
+//                                          dpp::message()
+//                                                  .set_type(dpp::mt_reply)
+//                                                  .set_flags(dpp::m_ephemeral)
+//                                                  .set_content(ss.str())
+//                        );
+//                    }
+//                } else {
+//                    if (interaction.command.channel_id == botSpam) {
+//                        interaction.reply(dpp::ir_channel_message_with_source,
+//                                          dpp::message()
+//                                                  .set_type(dpp::mt_reply)
+//                                                  .set_content("User Not Found")
+//                        );
+//                    } else {
+//                        interaction.reply(dpp::ir_channel_message_with_source,
+//                                          dpp::message()
+//                                                  .set_type(dpp::mt_reply)
+//                                                  .set_flags(dpp::m_ephemeral)
+//                                                  .set_content("User Not Found")
+//                        );
+//                    }
+//                }
+//            });
         }
         {
             dpp::slashcommand command;
@@ -727,31 +732,31 @@ namespace Bot {
             for (auto &com: settings.getCommandPermissions(name)) {
                 command.add_permission(com);
             }
-            server.getApp().registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
-                std::stringstream ss;
-                ss << "Server Stats\n";
-                ss << "Current Count = " << currentCount << "\n";
-                if (lastPlayer != nullptr) {
-                    ss << "Last User <@" << lastPlayer->userId << ">\n";
-                } else {
-                    ss << "No Last User\n";
-                }
-                ss << "Highest Count = " << highestCount << "\n";
-                if (interaction.command.channel_id == botSpam) {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_content(ss.str())
-                    );
-                } else {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_flags(dpp::m_ephemeral)
-                                              .set_content(ss.str())
-                    );
-                }
-            });
+//            server.getApp().registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+//                std::stringstream ss;
+//                ss << "Server Stats\n";
+//                ss << "Current Count = " << currentCount << "\n";
+//                if (lastPlayer != nullptr) {
+//                    ss << "Last User <@" << lastPlayer->userId << ">\n";
+//                } else {
+//                    ss << "No Last User\n";
+//                }
+//                ss << "Highest Count = " << highestCount << "\n";
+//                if (interaction.command.channel_id == botSpam) {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_content(ss.str())
+//                    );
+//                } else {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_flags(dpp::m_ephemeral)
+//                                              .set_content(ss.str())
+//                    );
+//                }
+//            });
         }
         {
             dpp::slashcommand command;
@@ -763,39 +768,39 @@ namespace Bot {
             for (auto &com: settings.getCommandPermissions(name)) {
                 command.add_permission(com);
             }
-            server.getApp().registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
-                std::stringstream ss;
-                ss<<"valid digits\n";
-                for (auto &value : StringCalculator::getNumberMap()) {
-                    ss<<StringCalculator::unicodeToString(value.first)<<" : "<<value.second<<"\n";
-                }
-                ss<<"\nvalid operators\n";
-                for (auto &value: StringCalculator::getOperatorMap()) {
-                    ss<<StringCalculator::unicodeToString(value.first)<<"\n";
-                }
-                ss<<"\nvalid constants\n";
-                for (auto &value: StringCalculator::getConstMap()) {
-                    ss<<value.first<<" : "<<value.second<<"\n";
-                }
-                ss<<"\nvalid functions\n";
-                for (auto &value: StringCalculator::getFunctionMap()) {
-                    ss<<value.first<<"\n";
-                }
-                if (interaction.command.channel_id == botSpam) {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_content(ss.str())
-                    );
-                } else {
-                    interaction.reply(dpp::ir_channel_message_with_source,
-                                      dpp::message()
-                                              .set_type(dpp::mt_reply)
-                                              .set_flags(dpp::m_ephemeral)
-                                              .set_content(ss.str())
-                    );
-                }
-            });
+//            server.getApp().registerCommand(bot, settings, command, [this](const dpp::interaction_create_t &interaction) {
+//                std::stringstream ss;
+//                ss<<"valid digits\n";
+//                for (auto &value : StringCalculator::getNumberMap()) {
+//                    ss<<StringCalculator::unicodeToString(value.first)<<" : "<<value.second<<"\n";
+//                }
+//                ss<<"\nvalid operators\n";
+//                for (auto &value: StringCalculator::getOperatorMap()) {
+//                    ss<<StringCalculator::unicodeToString(value.first)<<"\n";
+//                }
+//                ss<<"\nvalid constants\n";
+//                for (auto &value: StringCalculator::getConstMap()) {
+//                    ss<<value.first<<" : "<<value.second<<"\n";
+//                }
+//                ss<<"\nvalid functions\n";
+//                for (auto &value: StringCalculator::getFunctionMap()) {
+//                    ss<<value.first<<"\n";
+//                }
+//                if (interaction.command.channel_id == botSpam) {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_content(ss.str())
+//                    );
+//                } else {
+//                    interaction.reply(dpp::ir_channel_message_with_source,
+//                                      dpp::message()
+//                                              .set_type(dpp::mt_reply)
+//                                              .set_flags(dpp::m_ephemeral)
+//                                              .set_content(ss.str())
+//                    );
+//                }
+//            });
         }
     }
 

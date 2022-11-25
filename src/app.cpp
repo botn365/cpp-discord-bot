@@ -2,8 +2,9 @@
 // Created by bot on 06.11.21.
 //
 
+
+#include "../include/server_settings.hpp"
 #include "../include/app.hpp"
-#include "../include/counting_game.hpp"
 
 namespace Bot {
 
@@ -24,7 +25,7 @@ namespace Bot {
 
         bot->on_message_create([this](const dpp::message_create_t &message) {
             if (message.msg.author.id == bot->me.id) return;
-            countingGame->count(this, message);
+            //countingGame->count(this, message);
         });
 
         bot->on_interaction_create([this](const dpp::interaction_create_t &interaction) {
@@ -38,25 +39,25 @@ namespace Bot {
         });
 
         bot->on_ready([this](const dpp::ready_t &event) {
-            this->registerSettings(*bot, *settings);
-            countingGame->addCommands(*bot, *settings, this);
+            //this->registerSettings(*bot, *settings);
+            //countingGame->addCommands(*bot, *settings, this);
             batchUploadCommands();
         });
 
         bot->on_message_reaction_add([this](const dpp::message_reaction_add_t &event) {
-            rollSelector->onMessageReactionAdd(this, event);
+            //rollSelector->onMessageReactionAdd(this, event);
         });
 
         bot->on_message_reaction_remove([this](const dpp::message_reaction_remove_t &event) {
-            rollSelector->onMessageReactionRemove(this, event);
+            //rollSelector->onMessageReactionRemove(this, event);
         });
 
         bot->on_voice_state_update([this](const dpp::voice_state_update_t &event) {
-            voiceHandler->onVoiceStateUpdate(event);
+            //voiceHandler->onVoiceStateUpdate(event);
         });
 
         bot->on_message_delete([this](const dpp::message_delete_t &event){
-            countingGame->onMessageDelete(this,event);
+            //countingGame->onMessageDelete(this,event);
         });
 
         std::cout << "start bot" << "\n";
@@ -64,9 +65,9 @@ namespace Bot {
     }
 
     void App::registerSettingsModuals(dpp::slashcommand &baseCommand) {
-        rollSelector->addSettings(baseCommand, this);
-        countingGame->addSettings(baseCommand, this);
-        voiceHandler->addSettings(baseCommand);
+        //rollSelector->addSettings(baseCommand, this);
+        //countingGame->addSettings(baseCommand, this);
+        //voiceHandler->addSettings(baseCommand);
     }
 
     void App::registerSettings(dpp::cluster &bot, ServerSettings &settings) {
@@ -106,7 +107,7 @@ namespace Bot {
 
     void App::loadServers() {
         for (auto &server : globalSettings->getServers()) {
-            servers.emplace_back(server,*this->bot);
+            //servers.emplace_back(server,*this->bot);
         }
 
         for (auto &server : servers) {
@@ -134,35 +135,35 @@ namespace Bot {
     }
 
     void App::batchUploadCommands() {
-        bot->guild_bulk_command_create(tempCommandVector, settings->getServerId(),
-                                       [this](const dpp::confirmation_callback_t &callBack) {
-                                           if (!callBack.is_error()) {
-                                               auto commandMap = std::get<dpp::slashcommand_map>(callBack.value);
-                                               for (auto &com: commandMap) {
-                                                   for (int i = 0; i < tempCommandVector.size(); i++) {
-                                                       auto &tempCom = tempCommandVector[i];
-                                                       if (com.second.name == tempCom.name) {
-                                                           tempCom.id = com.second.id;
-                                                           commands.insert(std::pair{tempCom.id, Interaction{tempCom,
-                                                                                                             std::move(
-                                                                                                                     tempCallBackVector[i])}});
-                                                           if (com.second.name == "settings") {
-                                                               for (auto &value: com.second.options) {
-                                                                   for (auto &command : value.options) {
-                                                                       std::cout << "regitert command " << value.name << " " << command.name << "\n";
-                                                                   }
-                                                               }
-                                                           }
-                                                           std::cout << "regitert command " << com.second.name << "\n";
-                                                       }
-                                                   }
-                                               }
-                                           } else {
-                                               throw std::runtime_error("failed to create commands");
-                                           }
-                                           std::cout << "commands registert\nBot Ready\n";
-                                           tempCommandVector.clear();
-                                           tempCallBackVector.clear();
-                                       });
+//        bot->guild_bulk_command_create(tempCommandVector, settings->getServerId(),
+//                                       [this](const dpp::confirmation_callback_t &callBack) {
+//                                           if (!callBack.is_error()) {
+//                                               auto commandMap = std::get<dpp::slashcommand_map>(callBack.value);
+//                                               for (auto &com: commandMap) {
+//                                                   for (int i = 0; i < tempCommandVector.size(); i++) {
+//                                                       auto &tempCom = tempCommandVector[i];
+//                                                       if (com.second.name == tempCom.name) {
+//                                                           tempCom.id = com.second.id;
+//                                                           commands.insert(std::pair{tempCom.id, Interaction{tempCom,
+//                                                                                                             std::move(
+//                                                                                                                     tempCallBackVector[i])}});
+//                                                           if (com.second.name == "settings") {
+//                                                               for (auto &value: com.second.options) {
+//                                                                   for (auto &command : value.options) {
+//                                                                       std::cout << "regitert command " << value.name << " " << command.name << "\n";
+//                                                                   }
+//                                                               }
+//                                                           }
+//                                                           std::cout << "regitert command " << com.second.name << "\n";
+//                                                       }
+//                                                   }
+//                                               }
+//                                           } else {
+//                                               throw std::runtime_error("failed to create commands");
+//                                           }
+//                                           std::cout << "commands registert\nBot Ready\n";
+//                                           tempCommandVector.clear();
+//                                           tempCallBackVector.clear();
+//                                       });
     }
 }

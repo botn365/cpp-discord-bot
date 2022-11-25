@@ -2,6 +2,7 @@
 // Created by bot on 10/12/22.
 //
 
+#pragma once
 
 #include <memory>
 #include "server_settings.hpp"
@@ -39,7 +40,7 @@ namespace Bot {
 
         App &app;
         std::unique_ptr<ServerSettings> settings;
-        std::unique_ptr<CountingGame> countingGame;
+        //std::unique_ptr<CountingGame> countingGame;
         std::unique_ptr<RollSelector> rollSelector;
         std::unique_ptr<VoiceHandler> voiceHandler;
         dpp::snowflake serverID;

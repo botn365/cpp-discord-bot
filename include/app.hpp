@@ -33,7 +33,7 @@ namespace Bot {
 
         void registerSettingsModuals(dpp::slashcommand &baseCommand);
 
-        GlobalSettings * getGlobalSettings() const { return globalSettings.get();}
+        GlobalSettings &getGlobalSettings() const { return *globalSettings;}
 
         void loadServers();
 

@@ -4,10 +4,8 @@
 
 #pragma once
 
-
 #include "dpp/dpp.h"
 #include "server_settings.hpp"
-
 
 namespace Bot {
     class App;

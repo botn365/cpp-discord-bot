@@ -3,7 +3,7 @@
 //
 
 #include "../include/server.hpp"
-#include "app.cpp"
+//#include "app.cpp"
 
 namespace Bot {
 
@@ -19,7 +19,7 @@ namespace Bot {
     }
 
     void Server::init() {
-        countingGame = std::make_unique<CountingGame>(*this);
+        //countingGame = std::make_unique<CountingGame>(*this);
     }
 
     void Server::registerCallbacks() {
@@ -27,6 +27,8 @@ namespace Bot {
     }
 
     dpp::cluster &Server::getBot() const {
-        return *app.bot.get();
+        dpp::cluster a("");
+        return a;
+        //return *app.bot.get();
     }
 } // Bot

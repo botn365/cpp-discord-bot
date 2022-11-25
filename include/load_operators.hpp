@@ -5,13 +5,13 @@
 #pragma once
 
 #include "string_calculator.hpp"
+//#include "util.hpp"
 #include <rapidjson/document.h>
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
 #include <cmath>
 #include <iostream>
-
 
 namespace Bot {
 
@@ -20,22 +20,22 @@ namespace Bot {
     class LoadOperators {
     public:
         static void loadNumbers(const std::string &translationFile) {
-            auto input = iFileToString(translationFile);
-            rapidjson::Document doc;
-            doc.Parse(input.c_str());
-            if (doc.HasParseError()) {
-                std::stringstream ss;
-                ss << "failed to parse json ParseErrorCode = " << doc.GetParseError();
-                std::cout<<"tryed to parse unicodetranslation from "<<translationFile<<"\nfile not found or does not exists\n";
-                throw std::runtime_error(ss.str());
-            }
-            if (!doc.HasMember("codes")) {
-                throw std::runtime_error("invalid name translation file");
-            }
-            auto &codes = doc["codes"];
-            for (auto &code: codes.GetArray()) {
-                Str::addUnicodeNumber(code["unicode"].GetInt(),code["value"].GetInt());
-            }
+//            auto input = Util::iFileToString(translationFile);
+//            rapidjson::Document doc;
+//            doc.Parse(input.c_str());
+//            if (doc.HasParseError()) {
+//                std::stringstream ss;
+//                ss << "failed to parse json ParseErrorCode = " << doc.GetParseError();
+//                std::cout<<"tryed to parse unicodetranslation from "<<translationFile<<"\nfile not found or does not exists\n";
+//                throw std::runtime_error(ss.str());
+//            }
+//            if (!doc.HasMember("codes")) {
+//                throw std::runtime_error("invalid name translation file");
+//            }
+//            auto &codes = doc["codes"];
+//            for (auto &code: codes.GetArray()) {
+//                Str::addUnicodeNumber(code["unicode"].GetInt(),code["value"].GetInt());
+//            }
         }
 
         static void loadOperators() {
