@@ -76,7 +76,8 @@ namespace Bot {
         uint64_t highestCount = 0;
         uint64_t resetCount = 0;
         uint64_t lastMessage = 0;
-        std::unique_ptr<Sqlitepp::Database>  db;
+        std::unique_ptr<Sqlitepp::Database>  dba;
+        sqlite3 *db;
     };
 }
 
