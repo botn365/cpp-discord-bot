@@ -10,13 +10,11 @@ option(DOWNLOAD_LIBS "if it should download libs" ON)
 #download libs
 if(DOWNLOAD_LIBS)
     include(FetchContent)
-
-
     #dpp
     FetchContent_Declare(
             dpp_dw
             GIT_REPOSITORY git@github.com:brainboxdotcc/DPP.git
-            GIT_TAG  fdb61e70b34addd5b522195e7959679385fb1651
+            GIT_TAG  d46bd98396609c83defff2da3227be383935d5ea
     )
     FetchContent_GetProperties(dpp_dw)
     if (NOT dpp_dw_POPULATED)

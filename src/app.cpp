@@ -24,7 +24,9 @@ namespace Bot {
         countingGame = std::make_unique<CountingGame>(this);
 
         bot->on_message_create([this](const dpp::message_create_t &message) {
-            if (message.msg->author->id == bot->me.id) return;
+
+
+            if (message.msg.author.id == bot->me.id) return;
             countingGame->count(this, message);
         });
 
@@ -36,6 +38,11 @@ namespace Bot {
                     result->second.callBack(interaction);
                 }
             }
+        });
+
+
+        bot->on_guild_member_add([this](const dpp::guild_member_add_t &member) {
+
         });
 
         bot->on_ready([this](const dpp::ready_t &event) {
@@ -62,7 +69,7 @@ namespace Bot {
         });
 
         std::cout << "start bot" << "\n";
-        bot->start(false);
+        bot->start(dpp::start_type::st_wait);
     }
 
     void App::registerSettingsModuals(dpp::slashcommand &baseCommand) {

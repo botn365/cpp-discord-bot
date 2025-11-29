@@ -199,7 +199,7 @@ namespace Bot {
                 app->bot->guild_get_member(event.reacting_member.guild_id, event.reacting_member.user_id,
                                            [app, this, roll, userID](const dpp::confirmation_callback_t &event) {
                                                auto &user = std::get<dpp::guild_member>(event.value);
-                                               for (auto &guild_roll: user.roles) {
+                                               for (auto &guild_roll: user.get_roles()) {
                                                    for (auto &iRoll: rolls) {
                                                        if (guild_roll == iRoll.rollId && guild_roll != roll.rollId) {
                                                            return;
